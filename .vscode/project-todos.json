@@ -1,0 +1,12 @@
+[
+  {
+    "id": "1775700736434",
+    "text": "Create a feature that allows the creation of a screenshot testimonial, like in a WhatsApp field, with the message, the profile image, the likes, the icons, and the emojis. Make it look like a real screenshot with time and stuff.",
+    "completed": true
+  },
+  {
+    "id": "1775700707783",
+    "text": "Generate assets and profile avatar using Grok.",
+    "completed": true
+  }
+]

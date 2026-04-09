@@ -1,8 +1,9 @@
 'use client'
 
-import { useState, useTransition } from 'react'
+import { useState, useTransition, useRef } from 'react'
 import Image from 'next/image'
-import { Sparkles, Loader2, Trash2, Check, RefreshCw, Plus, X } from 'lucide-react'
+import { Sparkles, Loader2, Trash2, Check, RefreshCw, Upload, Shuffle } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 import WhatsAppScreenshot, { type Reaction, type ChatTestimonial } from './WhatsAppScreenshot'
 
 interface Props {
@@ -13,6 +14,10 @@ interface Props {
   initial?: ChatTestimonial | null
   onSaved: (t: ChatTestimonial) => void
   onCancel: () => void
+  /** Seller display name shown in the group-chat header */
+  sellerName?: string
+  /** Seller avatar URL shown in the group-chat header */
+  sellerAvatarUrl?: string | null
 }
 
 const DEFAULT: Omit<ChatTestimonial, 'id'> = {
@@ -34,17 +39,21 @@ export default function TestimonialEditorForm({
   initial,
   onSaved,
   onCancel,
+  sellerName,
+  sellerAvatarUrl,
 }: Props) {
   const [form, setForm] = useState<Omit<ChatTestimonial, 'id'>>(() =>
     initial ? { ...initial } : { ...DEFAULT }
   )
-  const [newReactionEmoji, setNewReactionEmoji] = useState('')
-  const [newReactionCount, setNewReactionCount] = useState(1)
   const [isPending, startTransition] = useTransition()
   const [isGenerating, setIsGenerating] = useState(false)
   const [isGeneratingAvatar, setIsGeneratingAvatar] = useState(false)
-  const [isGeneratingBg, setIsGeneratingBg] = useState(false)
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const avatarFileRef = useRef<HTMLInputElement>(null)
+  const [avatarGender, setAvatarGender] = useState<string | null>(null)
+  const [avatarEthnicity, setAvatarEthnicity] = useState<string | null>(null)
+  const [avatarAge, setAvatarAge] = useState<string | null>(null)
 
   // ── AI generation ──────────────────────────────────────────
   async function generateAll() {
@@ -59,6 +68,9 @@ export default function TestimonialEditorForm({
           productDescription,
           generateAvatar: true,
           generateBackground: false,
+          avatarGender,
+          avatarEthnicity,
+          avatarAge,
         }),
       })
       const data = await res.json()
@@ -79,6 +91,31 @@ export default function TestimonialEditorForm({
     }
   }
 
+  async function uploadAvatarFile(file: File) {
+    setIsUploadingAvatar(true)
+    setError(null)
+    try {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Not authenticated')
+      const ext = file.name.split('.').pop() ?? 'jpg'
+      const path = `${user.id}/${crypto.randomUUID()}.${ext}`
+      const { error: uploadError } = await supabase.storage
+        .from('testimonial-assets')
+        .upload(path, file, { upsert: false })
+      if (uploadError) throw new Error(uploadError.message)
+      const { data: { publicUrl } } = supabase.storage
+        .from('testimonial-assets')
+        .getPublicUrl(path)
+      setForm((f) => ({ ...f, sender_avatar_url: publicUrl }))
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Upload failed')
+    } finally {
+      setIsUploadingAvatar(false)
+      if (avatarFileRef.current) avatarFileRef.current.value = ''
+    }
+  }
+
   async function generateAvatarOnly() {
     setIsGeneratingAvatar(true)
     setError(null)
@@ -91,6 +128,9 @@ export default function TestimonialEditorForm({
           productDescription,
           generateAvatar: true,
           generateBackground: false,
+          avatarGender,
+          avatarEthnicity,
+          avatarAge,
         }),
       })
       const data = await res.json()
@@ -103,30 +143,23 @@ export default function TestimonialEditorForm({
     }
   }
 
-  async function generateBgOnly() {
-    setIsGeneratingBg(true)
-    setError(null)
-    try {
-      const res = await fetch('/api/testimonials/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          productTitle,
-          generateAvatar: false,
-          generateBackground: true,
-        }),
-      })
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.error)
-      if (data.backgroundUrl) setForm((f) => ({ ...f, background_url: data.backgroundUrl }))
-    } catch (e: unknown) {
-      setError(e instanceof Error ? e.message : 'Background generation failed')
-    } finally {
-      setIsGeneratingBg(false)
+  function randomizeDateTime() {
+    const h = Math.floor(Math.random() * 15) + 8
+    const m = Math.floor(Math.random() * 60)
+    const time = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`
+    const daysAgo = Math.floor(Math.random() * 7)
+    let dateLabel: string
+    if (daysAgo === 0) dateLabel = 'Today'
+    else if (daysAgo === 1) dateLabel = 'Yesterday'
+    else {
+      const d = new Date()
+      d.setDate(d.getDate() - daysAgo)
+      dateLabel = d.toLocaleDateString('en-US', { weekday: 'long' })
     }
+    setForm((f) => ({ ...f, display_time: time, display_date: dateLabel }))
   }
 
-  // ── Save ──────────────────────────────────────────────────
+  // ── Save ─────────────────────────────────────────────────
   function handleSave() {
     startTransition(async () => {
       setError(null)
@@ -153,21 +186,6 @@ export default function TestimonialEditorForm({
     })
   }
 
-  // ── Reactions ────────────────────────────────────────────
-  function addReaction() {
-    if (!newReactionEmoji.trim()) return
-    setForm((f) => ({
-      ...f,
-      reactions: [...f.reactions, { emoji: newReactionEmoji.trim(), count: newReactionCount }],
-    }))
-    setNewReactionEmoji('')
-    setNewReactionCount(1)
-  }
-
-  function removeReaction(index: number) {
-    setForm((f) => ({ ...f, reactions: f.reactions.filter((_, i) => i !== index) }))
-  }
-
   const preview: ChatTestimonial = { id: initial?.id ?? 'preview', ...form }
 
   return (
@@ -175,7 +193,7 @@ export default function TestimonialEditorForm({
       {/* ── Live preview ── */}
       <div className="flex flex-col items-center gap-4 flex-shrink-0">
         <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest">Preview</p>
-        <WhatsAppScreenshot testimonial={preview} />
+        <WhatsAppScreenshot testimonial={preview} sellerName={sellerName} sellerAvatarUrl={sellerAvatarUrl} />
       </div>
 
       {/* ── Controls ── */}
@@ -211,6 +229,62 @@ export default function TestimonialEditorForm({
         {/* Avatar */}
         <div>
           <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Sender avatar</span>
+
+          {/* Avatar descriptor tags */}
+          <div className="space-y-2 mb-3">
+            {/* Gender */}
+            <div className="flex flex-wrap gap-1.5">
+              {(['Male', 'Female', 'Non-binary'] as const).map((g) => (
+                <button
+                  key={g}
+                  type="button"
+                  onClick={() => setAvatarGender(avatarGender === g ? null : g)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    avatarGender === g
+                      ? 'bg-[#FF007A] border-[#FF007A] text-white'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                  }`}
+                >
+                  {g}
+                </button>
+              ))}
+            </div>
+            {/* Ethnicity */}
+            <div className="flex flex-wrap gap-1.5">
+              {(['Asian', 'Black', 'Hispanic', 'Middle Eastern', 'South Asian', 'White'] as const).map((e) => (
+                <button
+                  key={e}
+                  type="button"
+                  onClick={() => setAvatarEthnicity(avatarEthnicity === e ? null : e)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    avatarEthnicity === e
+                      ? 'bg-[#FF007A] border-[#FF007A] text-white'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                  }`}
+                >
+                  {e}
+                </button>
+              ))}
+            </div>
+            {/* Age range */}
+            <div className="flex flex-wrap gap-1.5">
+              {(['18–25', '26–35', '36–45', '46–60', '60+'] as const).map((a) => (
+                <button
+                  key={a}
+                  type="button"
+                  onClick={() => setAvatarAge(avatarAge === a ? null : a)}
+                  className={`px-2.5 py-1 rounded-full text-xs font-medium border transition-colors ${
+                    avatarAge === a
+                      ? 'bg-[#FF007A] border-[#FF007A] text-white'
+                      : 'border-gray-200 text-gray-500 hover:border-gray-400'
+                  }`}
+                >
+                  {a}
+                </button>
+              ))}
+            </div>
+          </div>
+
           <div className="flex items-center gap-3">
             {form.sender_avatar_url ? (
               <div className="relative w-10 h-10 rounded-full overflow-hidden flex-shrink-0">
@@ -227,6 +301,26 @@ export default function TestimonialEditorForm({
               value={form.sender_avatar_url ?? ''}
               onChange={(e) => setForm((f) => ({ ...f, sender_avatar_url: e.target.value || null }))}
             />
+            {/* Hidden file input */}
+            <input
+              ref={avatarFileRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0]
+                if (file) uploadAvatarFile(file)
+              }}
+            />
+            <button
+              type="button"
+              onClick={() => avatarFileRef.current?.click()}
+              disabled={isUploadingAvatar}
+              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-60"
+              title="Upload image"
+            >
+              {isUploadingAvatar ? <Loader2 className="w-3 h-3 animate-spin" /> : <Upload className="w-3 h-3" />}
+            </button>
             <button
               type="button"
               onClick={generateAvatarOnly}
@@ -252,102 +346,36 @@ export default function TestimonialEditorForm({
         </label>
 
         {/* Time + Date */}
-        <div className="flex gap-4">
-          <label className="flex-1 block">
-            <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Time</span>
-            <input
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
-              value={form.display_time}
-              onChange={(e) => setForm((f) => ({ ...f, display_time: e.target.value }))}
-              placeholder="14:23"
-            />
-          </label>
-          <label className="flex-1 block">
-            <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Date label</span>
-            <input
-              className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
-              value={form.display_date}
-              onChange={(e) => setForm((f) => ({ ...f, display_date: e.target.value }))}
-              placeholder="Today"
-            />
-          </label>
-        </div>
-
-        {/* Reactions */}
         <div>
-          <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Reactions</span>
-          <div className="flex flex-wrap gap-2 mb-2">
-            {form.reactions.map((r, i) => (
-              <span
-                key={i}
-                className="inline-flex items-center gap-1 bg-gray-100 rounded-full pl-2 pr-1 py-0.5 text-sm"
-              >
-                {r.emoji}
-                <span className="text-xs text-gray-500">{r.count}</span>
-                <button
-                  type="button"
-                  onClick={() => removeReaction(i)}
-                  className="text-gray-400 hover:text-red-500 transition-colors ml-0.5"
-                >
-                  <X className="w-3 h-3" />
-                </button>
-              </span>
-            ))}
-          </div>
-          <div className="flex items-center gap-2">
-            <input
-              className="w-16 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
-              placeholder="😊"
-              value={newReactionEmoji}
-              onChange={(e) => setNewReactionEmoji(e.target.value)}
-              maxLength={4}
-            />
-            <input
-              type="number"
-              min={1}
-              max={99}
-              className="w-16 border border-gray-200 rounded-xl px-3 py-2 text-sm text-center focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
-              value={newReactionCount}
-              onChange={(e) => setNewReactionCount(Number(e.target.value))}
-            />
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-sm font-semibold text-gray-700">Time &amp; Date</span>
             <button
               type="button"
-              onClick={addReaction}
-              className="flex items-center gap-1 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors"
+              onClick={randomizeDateTime}
+              className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 hover:bg-gray-200 text-gray-600 text-xs font-semibold rounded-lg transition-colors"
+              title="Randomize time and date"
             >
-              <Plus className="w-3 h-3" />
-              Add
+              <Shuffle className="w-3 h-3" />
+              Randomize
             </button>
           </div>
-        </div>
-
-        {/* Background */}
-        <div>
-          <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Chat background</span>
-          <div className="flex items-center gap-3">
-            <input
-              className="flex-1 border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
-              placeholder="Image URL or leave blank for colour"
-              value={form.background_url ?? ''}
-              onChange={(e) => setForm((f) => ({ ...f, background_url: e.target.value || null }))}
-            />
-            <button
-              type="button"
-              onClick={generateBgOnly}
-              disabled={isGeneratingBg}
-              className="flex-shrink-0 flex items-center gap-1.5 px-3 py-2 bg-gray-100 hover:bg-gray-200 text-gray-700 text-xs font-semibold rounded-xl transition-colors disabled:opacity-60"
-              title="Generate background with AI"
-            >
-              {isGeneratingBg ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-              AI BG
-            </button>
-            {/* Colour fallback */}
-            <label className="flex items-center gap-1.5 cursor-pointer" title="Fallback colour">
+          <div className="flex gap-4">
+            <label className="flex-1 block">
+              <span className="text-xs text-gray-500 mb-1 block">Time</span>
               <input
-                type="color"
-                className="w-8 h-8 rounded-lg border border-gray-200 cursor-pointer"
-                value={form.chat_bg_color}
-                onChange={(e) => setForm((f) => ({ ...f, chat_bg_color: e.target.value }))}
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
+                value={form.display_time}
+                onChange={(e) => setForm((f) => ({ ...f, display_time: e.target.value }))}
+                placeholder="14:23"
+              />
+            </label>
+            <label className="flex-1 block">
+              <span className="text-xs text-gray-500 mb-1 block">Date label</span>
+              <input
+                className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40"
+                value={form.display_date}
+                onChange={(e) => setForm((f) => ({ ...f, display_date: e.target.value }))}
+                placeholder="Today"
               />
             </label>
           </div>

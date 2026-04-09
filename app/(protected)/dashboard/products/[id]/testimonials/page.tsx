@@ -24,6 +24,12 @@ export default async function ProductTestimonialsPage({ params }: PageProps) {
 
   if (!product) notFound()
 
+  const { data: sellerProfile } = await supabase
+    .from('profiles')
+    .select('display_name, username, avatar_url')
+    .eq('id', user.id)
+    .maybeSingle()
+
   const { data: testimonials } = await supabase
     .from('chat_testimonials')
     .select('*')
@@ -71,6 +77,8 @@ export default async function ProductTestimonialsPage({ params }: PageProps) {
             productTitle={product.title}
             productDescription={product.description ?? ''}
             initialTestimonials={(testimonials ?? []) as ChatTestimonial[]}
+            sellerName={sellerProfile?.display_name ?? sellerProfile?.username}
+            sellerAvatarUrl={sellerProfile?.avatar_url ?? null}
           />
         </div>
       </div>

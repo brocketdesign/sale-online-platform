@@ -27,6 +27,8 @@ const schema = z.object({
   conversion_message: z.string().optional(),
   tags: z.string().optional(),
   status: z.enum(['draft', 'published'] as const),
+  show_sales_count: z.boolean(),
+  sales_count: z.number().int().min(0),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -87,6 +89,8 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
       conversion_message: product?.conversion_message ?? '',
       tags: product?.tags?.join(', ') ?? '',
       status: (product?.status as ProductStatus) ?? 'draft',
+      show_sales_count: product?.show_sales_count ?? false,
+      sales_count: product?.sales_count ?? 0,
     },
   })
 
@@ -158,6 +162,8 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
           status: values.status,
           seller_id: sellerId,
           banner_url: product?.banner_url ?? null,
+          show_sales_count: values.show_sales_count,
+          sales_count: values.sales_count,
         }
 
         let productId: string
@@ -296,6 +302,49 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
         hint="Short badge shown near the buy button"
         {...register('conversion_message')}
       />
+
+      {/* Sales Count */}
+      <div className="space-y-3 rounded-xl border border-gray-200 p-5 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Show Sales Count</label>
+            <p className="text-xs text-gray-500 mt-0.5">Display a &ldquo;X sales&rdquo; badge on the product page</p>
+          </div>
+          <Controller
+            name="show_sales_count"
+            control={control}
+            render={({ field }) => (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={field.value}
+                onClick={() => field.onChange(!field.value)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 ${
+                  field.value ? 'bg-brand-magenta' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                    field.value ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            )}
+          />
+        </div>
+        {watch('show_sales_count') && (
+          <Input
+            label="Number of Sales to Display"
+            type="number"
+            min="0"
+            step="1"
+            placeholder="0"
+            hint="The exact number shown to visitors"
+            error={errors.sales_count?.message}
+            {...register('sales_count', { valueAsNumber: true })}
+          />
+        )}
+      </div>
 
       {/* Tags */}
       <Input

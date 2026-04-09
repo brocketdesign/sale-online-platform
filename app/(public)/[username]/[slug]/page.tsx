@@ -7,9 +7,10 @@ import StarRating from '@/components/products/StarRating'
 import PriceTag from '@/components/products/PriceTag'
 import AddToCartButton from '@/components/products/AddToCartButton'
 import RatingBreakdown from '@/components/products/RatingBreakdown'
-import ReviewsList from '@/components/products/ReviewsList'
 import ProductDescription from '@/components/products/ProductDescription'
 import LiveSalesBadge from '@/components/products/LiveSalesBadge'
+import WishlistButton from '@/components/products/WishlistButton'
+import ShareButton from '@/components/products/ShareButton'
 import WhatsAppScreenshot from '@/components/testimonials/WhatsAppScreenshot'
 import type { ChatTestimonial } from '@/components/testimonials/WhatsAppScreenshot'
 import { formatPrice } from '@/lib/utils'
@@ -73,7 +74,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   return (
     <div className="min-h-screen bg-white">
       {/* Sticky top bar (shown by CSS on scroll via JS below) */}
-      <div id="sticky-bar" className="hidden lg:flex fixed top-16 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all">
+      <div id="sticky-bar" className="hidden lg:flex fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between py-3">
           <div className="flex items-center gap-4">
             <span className="font-bold text-brand-black text-sm truncate max-w-xs">{product.title}</span>
@@ -157,17 +158,14 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 <p className="text-sm text-gray-500 mb-6">Real messages from customers, shared with permission.</p>
                 <div className="flex flex-wrap gap-5">
                   {chatTestimonials.map((t) => (
-                    <WhatsAppScreenshot key={t.id} testimonial={t} />
+                    <WhatsAppScreenshot
+                      key={t.id}
+                      testimonial={t}
+                      sellerName={profile.display_name ?? profile.username}
+                      sellerAvatarUrl={profile.avatar_url ?? null}
+                    />
                   ))}
                 </div>
-              </div>
-            )}
-
-            {/* Reviews */}
-            {reviews.length > 0 && (
-              <div className="mb-10">
-                <h2 className="text-2xl font-black text-brand-black mb-6">Reviews</h2>
-                <ReviewsList reviews={reviews} />
               </div>
             )}
           </div>
@@ -188,18 +186,28 @@ export default async function ProductDetailPage({ params }: PageProps) {
               <AddToCartButton product={product} seller={profile} />
 
               {/* Sales count */}
-              {product.sales_count > 0 && (
+              {product.show_sales_count && product.sales_count > 0 && (
                 <div className="mt-3">
                   <LiveSalesBadge count={product.sales_count} />
                 </div>
               )}
 
-              {/* Tags */}
-              {product.tags.length > 0 && (
-                <div className="mt-5 flex flex-wrap gap-1.5">
-                  {product.tags.map((tag: string) => (
-                    <span key={tag} className="px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">{tag}</span>
-                  ))}
+              {/* Wishlist + Share */}
+              <div className="mt-3 flex gap-2">
+                <WishlistButton productId={product.id} productTitle={product.title} />
+                <ShareButton title={product.title} />
+              </div>
+
+              {/* Ratings breakdown */}
+              {reviews.length > 0 && (
+                <div className="mt-5 pt-5 border-t border-gray-100">
+                  <h3 className="text-sm font-bold text-brand-black mb-3 flex items-center justify-between">
+                    Ratings
+                    <span className="text-sm font-semibold text-gray-500">
+                      ★ {avg.toFixed(1)} ({reviews.length} rating{reviews.length !== 1 ? 's' : ''})
+                    </span>
+                  </h3>
+                  <RatingBreakdown reviews={reviews} avg={avg} compact />
                 </div>
               )}
             </div>

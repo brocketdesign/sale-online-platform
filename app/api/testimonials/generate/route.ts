@@ -8,11 +8,14 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   const body = await request.json()
-  const { productTitle, productDescription, generateAvatar, generateBackground } = body as {
+  const { productTitle, productDescription, generateAvatar, generateBackground, avatarGender, avatarEthnicity, avatarAge } = body as {
     productTitle: string
     productDescription?: string
     generateAvatar?: boolean
     generateBackground?: boolean
+    avatarGender?: string | null
+    avatarEthnicity?: string | null
+    avatarAge?: string | null
   }
 
   try {
@@ -63,8 +66,13 @@ Respond ONLY with valid JSON in this exact shape:
 
     // 2. Optionally generate avatar
     if (generateAvatar) {
+      const descriptors = [
+        avatarGender,
+        avatarEthnicity ? `${avatarEthnicity} ethnicity` : null,
+        avatarAge ? `aged ${avatarAge}` : null,
+      ].filter(Boolean).join(', ')
       const avatarUrl = await grokImage(
-        `Realistic profile photo of a person named ${parsed.senderName}. Casual selfie style, friendly smile, natural lighting, cropped to face. No text.`
+        `Realistic profile photo of a ${descriptors ? `${descriptors} person` : `person`} named ${parsed.senderName}. Casual selfie style, friendly smile, natural lighting, cropped to face. No text.`
       )
       result.senderAvatarUrl = avatarUrl
     }

@@ -2,8 +2,8 @@
 
 import { useCart } from '@/hooks/useCart'
 import Button from '@/components/ui/Button'
-import { ShoppingCart, Check } from 'lucide-react'
-import { toast } from 'sonner'
+import { ShoppingCart } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 import type { Product, Profile } from '@/types/database'
 
 interface Props {
@@ -13,15 +13,10 @@ interface Props {
 }
 
 export default function AddToCartButton({ product, seller, size = 'lg' }: Props) {
-  const { items, addItem, removeItem } = useCart()
-  const inCart = items.some((i) => i.productId === product.id)
+  const { addItem } = useCart()
+  const router = useRouter()
 
   function handleClick() {
-    if (inCart) {
-      removeItem(product.id)
-      toast.info('Removed from cart')
-      return
-    }
     addItem({
       id: `cart-${product.id}`,
       productId: product.id,
@@ -33,7 +28,7 @@ export default function AddToCartButton({ product, seller, size = 'lg' }: Props)
       sellerUsername: seller.username,
       slug: product.slug,
     })
-    toast.success('Added to cart!')
+    router.push('/checkout')
   }
 
   return (
@@ -41,20 +36,10 @@ export default function AddToCartButton({ product, seller, size = 'lg' }: Props)
       onClick={handleClick}
       size={size}
       fullWidth={size === 'lg'}
-      variant={inCart ? 'outline' : 'primary'}
-      className={inCart ? '!border-[#FF007A] !text-[#FF007A]' : ''}
+      variant="primary"
     >
-      {inCart ? (
-        <>
-          <Check className="w-4 h-4" />
-          In cart — remove
-        </>
-      ) : (
-        <>
-          <ShoppingCart className="w-4 h-4" />
-          Add to cart
-        </>
-      )}
+      <ShoppingCart className="w-4 h-4" />
+      Add to cart
     </Button>
   )
 }

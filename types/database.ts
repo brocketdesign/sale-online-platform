@@ -62,6 +62,7 @@ export interface Database {
           product_format: ProductFormat
           conversion_message: string | null
           sales_count: number
+          show_sales_count: boolean
           created_at: string
           updated_at: string
         }
@@ -77,6 +78,8 @@ export interface Database {
           tags?: string[]
           product_format?: ProductFormat
           conversion_message?: string | null
+          sales_count?: number
+          show_sales_count?: boolean
         }
         Update: Partial<Database['public']['Tables']['products']['Insert']>
         Relationships: []

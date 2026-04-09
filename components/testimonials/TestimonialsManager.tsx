@@ -11,6 +11,8 @@ interface Props {
   productTitle: string
   productDescription?: string
   initialTestimonials: ChatTestimonial[]
+  sellerName?: string
+  sellerAvatarUrl?: string | null
 }
 
 type Mode = 'list' | 'create' | 'edit'
@@ -20,6 +22,8 @@ export default function TestimonialsManager({
   productTitle,
   productDescription,
   initialTestimonials,
+  sellerName,
+  sellerAvatarUrl,
 }: Props) {
   const [testimonials, setTestimonials] = useState<ChatTestimonial[]>(initialTestimonials)
   const [mode, setMode] = useState<Mode>('list')
@@ -70,6 +74,8 @@ export default function TestimonialsManager({
         initial={editing}
         onSaved={handleSaved}
         onCancel={() => { setMode('list'); setEditing(null) }}
+        sellerName={sellerName}
+        sellerAvatarUrl={sellerAvatarUrl}
       />
     )
   }
@@ -106,9 +112,9 @@ export default function TestimonialsManager({
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-6">
           {testimonials.map((t) => (
             <div key={t.id} className="relative group">
-              <WhatsAppScreenshot testimonial={t} />
+              <WhatsAppScreenshot testimonial={t} sellerName={sellerName} sellerAvatarUrl={sellerAvatarUrl} />
               {/* Overlay controls */}
-              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-[28px] transition-all flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
+              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 rounded-2xl transition-all flex items-end justify-center pb-4 opacity-0 group-hover:opacity-100">
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => { setEditing(t); setMode('edit') }}

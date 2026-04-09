@@ -5,6 +5,7 @@ import { ArrowLeft, User, Shield } from 'lucide-react'
 import AvatarUpload from './AvatarUpload'
 import ProfileForm from './ProfileForm'
 import SecuritySection from './SecuritySection'
+import LogoutButton from './LogoutButton'
 
 export default async function ProfilePage() {
   const supabase = await createClient()
@@ -91,6 +92,11 @@ export default async function ProfilePage() {
           </div>
           <SecuritySection currentEmail={user.email ?? ''} />
         </section>
+
+        {/* Sign out */}
+        <div className="mt-10 pt-8 border-t border-gray-200 flex justify-end">
+          <LogoutButton />
+        </div>
 
       </div>
     </div>

@@ -4,6 +4,7 @@ import { stripe } from '@/lib/stripe'
 import { createServiceClient } from '@/lib/supabase/server'
 import { CheckCircle2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
+import { sendPurchaseConfirmationEmail } from '@/lib/resend'
 
 interface Props {
   searchParams: Promise<{ session_id?: string }>
@@ -128,6 +129,52 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         currency: item.currency,
       }))
       await supabase.from('purchases').insert(purchases)
+
+      // Send purchase confirmation email (non-critical)
+      if (recipientEmail) {
+        try {
+          // Fetch product + seller info for the first item for the email
+          const firstItem = cartItems[0]
+          if (firstItem) {
+            const { data: productData } = await supabase
+              .from('products')
+              .select('id, title, banner_url, seller:profiles!products_seller_id_fkey(display_name, username)')
+              .eq('id', firstItem.productId)
+              .maybeSingle()
+
+            // Get the inserted purchase id for the download link
+            const { data: firstPurchase } = await supabase
+              .from('purchases')
+              .select('id')
+              .eq('order_id', orderId!)
+              .eq('product_id', firstItem.productId)
+              .maybeSingle()
+
+            const seller = (productData?.seller as unknown as { display_name: string | null; username: string } | null)
+
+            await sendPurchaseConfirmationEmail({
+              to: recipientEmail,
+              buyerName: buyerName,
+              productTitle: productData?.title ?? 'Your purchase',
+              productBannerUrl: productData?.banner_url,
+              sellerName: seller?.display_name ?? seller?.username ?? 'the creator',
+              amountPaid: cartItems.reduce((s, i) => s + i.price, 0),
+              currency: firstItem.currency,
+              purchaseId: firstPurchase?.id ?? '',
+            })
+
+            // Mark email sent
+            if (firstPurchase?.id) {
+              await supabase
+                .from('purchases')
+                .update({ purchase_email_sent_at: new Date().toISOString() })
+                .eq('id', firstPurchase.id)
+            }
+          }
+        } catch (emailError) {
+          console.error('[success] purchase email error', emailError)
+        }
+      }
 
       // Increment sales_count for each product
       for (const item of cartItems) {

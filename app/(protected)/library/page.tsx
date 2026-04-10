@@ -2,9 +2,11 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
-import { Download } from 'lucide-react'
+import { BookOpen, Download, Star } from 'lucide-react'
 
 export const metadata = { title: 'My Library' }
+
+const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
 
 export default async function LibraryPage() {
   const supabase = await createClient()
@@ -50,6 +52,18 @@ export default async function LibraryPage() {
 
   const purchases = (purchasesRaw ?? []) as unknown as PurchaseWithProduct[]
 
+  // Fetch which products have already been reviewed by this user
+  const productIds = purchases.map(p => p.product?.id).filter(Boolean) as string[]
+  const { data: reviewsRaw } = productIds.length
+    ? await supabase
+        .from('reviews')
+        .select('product_id')
+        .eq('reviewer_id', user.id)
+        .in('product_id', productIds)
+    : { data: [] }
+
+  const reviewedProductIds = new Set((reviewsRaw ?? []).map(r => r.product_id))
+
   return (
     <div className="min-h-screen bg-brand-offwhite">
       <div className="max-w-4xl mx-auto px-4 py-10">
@@ -73,6 +87,16 @@ export default async function LibraryPage() {
             {purchases.map(purchase => {
               const product = purchase.product
               if (!product) return null
+
+              const purchasedAt = new Date(purchase.created_at).getTime()
+              const reviewUnlocked = Date.now() - purchasedAt >= THREE_DAYS_MS
+              const alreadyReviewed = reviewedProductIds.has(product.id)
+
+              const reviewUnlockDate = new Date(purchasedAt + THREE_DAYS_MS).toLocaleDateString('en-US', {
+                month: 'short',
+                day: 'numeric',
+              })
+
               return (
                 <div key={purchase.id} className="bg-white rounded-2xl border border-gray-100 overflow-hidden flex flex-col">
                   {product.banner_url && (
@@ -96,19 +120,49 @@ export default async function LibraryPage() {
                         {product.seller?.display_name ?? product.seller?.username}
                       </Link>
                     </div>
-                    <div className="mt-auto flex items-center justify-between">
+
+                    {/* Review status badge */}
+                    <div className="mb-3">
+                      {alreadyReviewed ? (
+                        <span className="inline-flex items-center gap-1 text-xs text-green-600 bg-green-50 border border-green-100 rounded-full px-2.5 py-1">
+                          <Star className="w-3 h-3 fill-green-500" /> Reviewed
+                        </span>
+                      ) : reviewUnlocked ? (
+                        <Link
+                          href={`/library/${purchase.id}#review`}
+                          className="inline-flex items-center gap-1 text-xs text-brand-magenta bg-pink-50 border border-pink-100 rounded-full px-2.5 py-1 hover:bg-pink-100 transition-colors"
+                        >
+                          <Star className="w-3 h-3" /> Leave a review
+                        </Link>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-full px-2.5 py-1">
+                          <Star className="w-3 h-3" /> Review unlocks {reviewUnlockDate}
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="mt-auto flex items-center justify-between gap-2">
                       <span className="text-xs text-gray-400">
                         {formatPrice(purchase.amount_paid, purchase.currency)}
                       </span>
-                      <a
-                        href={`/api/download/${purchase.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-brand-magenta text-white text-sm font-medium rounded-xl hover:bg-brand-magenta/90 transition-colors"
-                      >
-                        <Download className="w-4 h-4" />
-                        Download
-                      </a>
+                      <div className="flex items-center gap-2">
+                        <Link
+                          href={`/library/${purchase.id}`}
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-black text-white text-sm font-medium rounded-xl hover:bg-brand-black/80 transition-colors"
+                        >
+                          <BookOpen className="w-4 h-4" />
+                          Read
+                        </Link>
+                        <a
+                          href={`/api/download/${purchase.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-magenta text-white text-sm font-medium rounded-xl hover:bg-brand-magenta/90 transition-colors"
+                        >
+                          <Download className="w-4 h-4" />
+                          Download
+                        </a>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -120,3 +174,4 @@ export default async function LibraryPage() {
     </div>
   )
 }
+

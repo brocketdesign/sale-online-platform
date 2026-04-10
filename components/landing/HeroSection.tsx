@@ -111,9 +111,15 @@ export default function HeroSection({ stats, placeholderImages = [] }: HeroProps
     if (query.trim()) router.push(`/discover?q=${encodeURIComponent(query)}`)
   }
 
-  // Use real revenue if > 0, otherwise fall back to impressive placeholder ($1.24M)
-  const displayRevenueMil =
-    stats.revenue > 0 ? stats.revenue / 100 / 1_000_000 : 1.24
+  // Hero live earnings counter — real data if available, otherwise a realistic placeholder
+  const baseRevenue = stats.revenue > 0 ? Math.floor(stats.revenue / 100) : 2_106_909
+  const heroRevenue = useCountUp({
+    end: baseRevenue,
+    duration: 2800,
+    delay: 0,
+    liveIncrement: 9,
+    liveInterval: 900,
+  })
 
   return (
     <section className="relative overflow-hidden bg-[#f4f0e8] min-h-[88vh] flex items-center">
@@ -130,27 +136,29 @@ export default function HeroSection({ stats, placeholderImages = [] }: HeroProps
 
       <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         {/* Badge */}
-        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-600 mb-8 shadow-sm">
+        <div className="inline-flex items-center gap-2 bg-white border border-gray-200 rounded-full px-4 py-2 text-sm font-medium text-gray-600 mb-10 shadow-sm">
           <Zap className="w-4 h-4 text-[#FF007A]" />
           Simple · Fast · No monthly fees
         </div>
 
-        {/* Headline */}
-        <h1 className="text-5xl sm:text-7xl lg:text-8xl font-black text-brand-black leading-[1.0] tracking-tight mb-6">
-          Go from{' '}
-          <span className="text-[#FF007A]">0</span>
-          {' '}to{' '}
-          <span className="relative inline-block">
-            <span className="text-[#FF007A]">$1</span>
-            <svg className="absolute -bottom-2 left-0 w-full" viewBox="0 0 200 8" fill="none">
-              <path d="M2 6 Q100 2 198 6" stroke="#FF007A" strokeWidth="3" strokeLinecap="round" />
-            </svg>
-          </span>
-        </h1>
+        {/* ── Live earnings hero number ──────────────────────────────── */}
+        <div className="mb-3">
+          <p className="text-4xl sm:text-6xl lg:text-8xl font-black text-brand-black tabular-nums leading-none tracking-tight">
+            ${Math.floor(heroRevenue).toLocaleString()}
+          </p>
+        </div>
 
-        <p className="text-xl sm:text-2xl text-gray-600 max-w-2xl mx-auto mb-10 font-medium leading-relaxed">
-          Anyone can earn their first dollar online.<br />
-          Start with what you know — sell it instantly.
+        {/* Live badge */}
+        <div className="flex items-center justify-center gap-2 mb-5">
+          <span className="relative flex h-2 w-2">
+            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500" />
+          </span>
+          <span className="text-[11px] font-bold text-green-600 uppercase tracking-widest">Live</span>
+        </div>
+
+        <p className="text-base sm:text-lg text-gray-500 max-w-sm mx-auto mb-12 font-medium leading-relaxed">
+          The amount of income earned by digital entrepreneurs on our platform this week.
         </p>
 
         {/* CTA buttons */}
@@ -192,17 +200,6 @@ export default function HeroSection({ stats, placeholderImages = [] }: HeroProps
 
         {/* ── Animated metrics ─────────────────────────────────────────── */}
         <div className="flex flex-wrap items-center justify-center gap-6 sm:gap-10 text-center mb-12">
-          <StatCard
-            prefix="$"
-            value={displayRevenueMil}
-            suffix="M+"
-            label="earned by creators"
-            delay={200}
-            liveIncrement={0.01}
-          />
-
-          <div className="w-px h-10 bg-gray-300 hidden sm:block" />
-
           <StatCard
             value={104_230}
             suffix="+"

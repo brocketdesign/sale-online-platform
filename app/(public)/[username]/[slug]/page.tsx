@@ -102,8 +102,21 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       )}
 
+      {/* Mobile sticky bottom bar */}
+      <div className="flex lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] px-4 py-3 gap-4 items-center">
+        <div className="flex flex-col">
+          <span className="text-xl font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
+          {product.conversion_message && (
+            <span className="text-xs text-gray-500 mt-0.5 line-clamp-1">{product.conversion_message}</span>
+          )}
+        </div>
+        <div className="flex-1">
+          <AddToCartButton product={product} seller={profile} />
+        </div>
+      </div>
+
       {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-28 lg:pb-10">
         <div className="flex gap-10 items-start">
           {/* Left: content */}
           <div className="flex-1 min-w-0">

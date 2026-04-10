@@ -211,6 +211,8 @@ export interface Database {
           product_id: string | null
           amount_paid: number
           currency: string
+          purchase_email_sent_at: string | null
+          review_request_sent_at: string | null
           created_at: string
         }
         Insert: {
@@ -220,6 +222,8 @@ export interface Database {
           product_id?: string | null
           amount_paid?: number
           currency?: string
+          purchase_email_sent_at?: string | null
+          review_request_sent_at?: string | null
         }
         Update: Partial<Database['public']['Tables']['purchases']['Insert']>
         Relationships: []

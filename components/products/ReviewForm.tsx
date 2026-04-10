@@ -50,13 +50,24 @@ export default function ReviewForm({ productId, onSuccess }: Props) {
     // Check if the user actually purchased this product
     const { data: purchase } = await supabase
       .from('purchases')
-      .select('id')
+      .select('id, created_at')
       .eq('product_id', productId)
       .eq('buyer_id', user.id)
       .maybeSingle()
 
     if (!purchase) {
       toast.error('You must purchase this product before reviewing it')
+      return
+    }
+
+    const THREE_DAYS_MS = 3 * 24 * 60 * 60 * 1000
+    const purchasedAt = new Date(purchase.created_at).getTime()
+    if (Date.now() - purchasedAt < THREE_DAYS_MS) {
+      const unlockDate = new Date(purchasedAt + THREE_DAYS_MS).toLocaleDateString('en-US', {
+        month: 'long',
+        day: 'numeric',
+      })
+      toast.error(`Reviews unlock on ${unlockDate} — take time to read first!`)
       return
     }
 

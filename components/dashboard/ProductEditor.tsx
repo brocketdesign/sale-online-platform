@@ -13,9 +13,41 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import type { Product, ProductFormat, ProductStatus } from '@/types/database'
-import { Upload, X, FileText, Image as ImageIcon, Eye } from 'lucide-react'
+import { Upload, X, FileText, Image as ImageIcon, Eye, Loader2 } from 'lucide-react'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
+
+/** Render the first `pageCount` pages of a PDF into JPEG File objects (client-side only). */
+async function extractPdfPagesAsFiles(source: File | string, pageCount: number): Promise<File[]> {
+  const pdfjsLib = await import('pdfjs-dist')
+  // Point the worker at the CDN to avoid bundling the heavy worker script
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `https://cdn.jsdelivr.net/npm/pdfjs-dist@${pdfjsLib.version}/build/pdf.worker.min.mjs`
+
+  const loadingTask =
+    source instanceof File
+      ? pdfjsLib.getDocument({ data: await source.arrayBuffer() })
+      : pdfjsLib.getDocument({ url: source })
+
+  const pdf = await loadingTask.promise
+  const count = Math.min(pageCount, pdf.numPages)
+  const files: File[] = []
+
+  for (let i = 1; i <= count; i++) {
+    const page = await pdf.getPage(i)
+    const viewport = page.getViewport({ scale: 2 })
+    const canvas = document.createElement('canvas')
+    canvas.width = viewport.width
+    canvas.height = viewport.height
+    const ctx = canvas.getContext('2d')!
+    await page.render({ canvasContext: ctx as CanvasRenderingContext2D, canvas, viewport }).promise
+    const blob = await new Promise<Blob>((resolve, reject) =>
+      canvas.toBlob(b => (b ? resolve(b) : reject(new Error('Canvas toBlob failed'))), 'image/jpeg', 0.9)
+    )
+    files.push(new File([blob], `page-${i}.jpg`, { type: 'image/jpeg' }))
+  }
+
+  return files
+}
 
 const schema = z.object({
   title: z.string().min(3, 'Title must be at least 3 characters'),
@@ -187,6 +219,41 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
     if (error) throw error
     const { data } = supabase.storage.from('product-previews').getPublicUrl(path)
     return data.publicUrl
+  }
+
+  // PDF page extraction state
+  const [extractingPages, setExtractingPages] = useState(false)
+
+  async function handleExtractPdfPages() {
+    const pageCount = watch('preview_page_count')
+    setExtractingPages(true)
+    try {
+      let source: File | string
+      const newPdf = productFiles.find(f => f.name.toLowerCase().endsWith('.pdf'))
+      if (newPdf) {
+        source = newPdf
+      } else {
+        const existingPdf = existingFiles.find(f => f.file_name.toLowerCase().endsWith('.pdf'))
+        if (!existingPdf) throw new Error('No PDF file found')
+        const { data, error } = await supabase.storage
+          .from('product-files')
+          .createSignedUrl(existingPdf.file_url, 120)
+        if (error || !data) throw new Error('Could not access PDF')
+        source = data.signedUrl
+      }
+      const files = await extractPdfPagesAsFiles(source, pageCount)
+      // Replace any existing "new" preview images with freshly extracted ones
+      newPreviewImagePreviews.forEach(url => URL.revokeObjectURL(url))
+      const previews = files.map(f => URL.createObjectURL(f))
+      setNewPreviewImageFiles(files)
+      setNewPreviewImagePreviews(previews)
+      toast.success(`Extracted ${files.length} page${files.length !== 1 ? 's' : ''} from PDF`)
+    } catch (err) {
+      toast.error('Could not extract pages from PDF')
+      console.error(err)
+    } finally {
+      setExtractingPages(false)
+    }
   }
 
   const {
@@ -575,7 +642,42 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
             {/* Preview image uploads */}
             <div className="space-y-3">
               <label className="block text-sm font-medium text-gray-700">Preview Images</label>
-              <p className="text-xs text-gray-500">Upload images of the pages you want to preview. They will be shown in order.</p>
+
+              {/* PDF extraction button — shown when a PDF file is available */}
+              {(() => {
+                const pdfFile = productFiles.find(f => f.name.toLowerCase().endsWith('.pdf'))
+                  ?? existingFiles.find(f => f.file_name.toLowerCase().endsWith('.pdf'))
+                if (!pdfFile) return null
+                const pdfName = 'name' in pdfFile ? pdfFile.name : pdfFile.file_name
+                const pageCount = watch('preview_page_count')
+                return (
+                  <div className="flex items-center gap-3 p-3 rounded-lg bg-blue-50 border border-blue-200">
+                    <FileText className="w-5 h-5 text-blue-500 shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium text-blue-800 truncate">{pdfName}</p>
+                      <p className="text-xs text-blue-600">Extract pages directly from this PDF</p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={handleExtractPdfPages}
+                      disabled={extractingPages}
+                      className="shrink-0 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white text-xs font-semibold transition-colors"
+                    >
+                      {extractingPages ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />Extracting…</>
+                      ) : (
+                        <><Eye className="w-3.5 h-3.5" />Extract {pageCount} page{pageCount !== 1 ? 's' : ''}</>
+                      )}
+                    </button>
+                  </div>
+                )
+              })()}
+
+              {/* Fallback help text for non-PDF products */}
+              {!productFiles.find(f => f.name.toLowerCase().endsWith('.pdf')) &&
+               !existingFiles.find(f => f.file_name.toLowerCase().endsWith('.pdf')) && (
+                <p className="text-xs text-gray-500">Upload images of the pages you want to preview. They will be shown in order.</p>
+              )}
 
               {/* Existing preview images */}
               {previewImages.length > 0 && (
@@ -619,7 +721,7 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
 
               <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm text-gray-600">
                 <Upload className="w-4 h-4" />
-                Add preview images
+                Add images manually
                 <input
                   type="file"
                   accept="image/*"

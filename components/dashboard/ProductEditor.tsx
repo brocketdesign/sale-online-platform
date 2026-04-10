@@ -29,6 +29,9 @@ const schema = z.object({
   status: z.enum(['draft', 'published'] as const),
   show_sales_count: z.boolean(),
   sales_count: z.number().int().min(0),
+  preview_enabled: z.boolean(),
+  preview_page_count: z.number().int().min(1).max(10),
+  preview_blur: z.boolean(),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -76,6 +79,12 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
   const [pdfPreviewName, setPdfPreviewName] = useState<string>('')
   const previewObjectUrlRef = useRef<string | null>(null)
 
+  // Page preview images state
+  const [previewImages, setPreviewImages] = useState<Array<{ id: string; image_url: string; sort_order: number }>>([])
+  const [newPreviewImageFiles, setNewPreviewImageFiles] = useState<File[]>([])
+  const [newPreviewImagePreviews, setNewPreviewImagePreviews] = useState<string[]>([])
+  const [removedPreviewImageIds, setRemovedPreviewImageIds] = useState<string[]>([])
+
   // Load existing product files on edit
   useEffect(() => {
     if (mode !== 'edit' || !product?.id) return
@@ -93,13 +102,32 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
       })
   }, [mode, product?.id, supabase])
 
-  // Clean up preview object URL on unmount
+  // Load existing preview images on edit
+  useEffect(() => {
+    if (mode !== 'edit' || !product?.id) return
+    supabase
+      .from('product_preview_images')
+      .select('id, image_url, sort_order')
+      .eq('product_id', product.id)
+      .order('sort_order')
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error('Could not load preview images')
+          return
+        }
+        setPreviewImages(data ?? [])
+      })
+  }, [mode, product?.id, supabase])
+
+  // Clean up preview object URLs on unmount
   useEffect(() => {
     return () => {
       if (previewObjectUrlRef.current) {
         URL.revokeObjectURL(previewObjectUrlRef.current)
       }
+      newPreviewImagePreviews.forEach(url => URL.revokeObjectURL(url))
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   function closePdfPreview() {
@@ -133,6 +161,34 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
     setPdfPreviewUrl(url)
   }
 
+  function handlePreviewImagesChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (!files.length) return
+    const previews = files.map(f => URL.createObjectURL(f))
+    setNewPreviewImageFiles(prev => [...prev, ...files])
+    setNewPreviewImagePreviews(prev => [...prev, ...previews])
+  }
+
+  function removeNewPreviewImage(index: number) {
+    URL.revokeObjectURL(newPreviewImagePreviews[index])
+    setNewPreviewImageFiles(prev => prev.filter((_, i) => i !== index))
+    setNewPreviewImagePreviews(prev => prev.filter((_, i) => i !== index))
+  }
+
+  function removeExistingPreviewImage(id: string) {
+    setRemovedPreviewImageIds(prev => [...prev, id])
+    setPreviewImages(prev => prev.filter(img => img.id !== id))
+  }
+
+  async function uploadPreviewImage(productId: string, file: File, index: number): Promise<string> {
+    const ext = file.name.split('.').pop()
+    const path = `${sellerId}/${productId}/preview-${Date.now()}-${index}.${ext}`
+    const { error } = await supabase.storage.from('product-previews').upload(path, file, { upsert: true })
+    if (error) throw error
+    const { data } = supabase.storage.from('product-previews').getPublicUrl(path)
+    return data.publicUrl
+  }
+
   const {
     register,
     control,
@@ -154,6 +210,9 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
       status: (product?.status as ProductStatus) ?? 'draft',
       show_sales_count: product?.show_sales_count ?? false,
       sales_count: product?.sales_count ?? 0,
+      preview_enabled: (product as any)?.preview_enabled ?? false,
+      preview_page_count: (product as any)?.preview_page_count ?? 3,
+      preview_blur: (product as any)?.preview_blur ?? false,
     },
   })
 
@@ -227,6 +286,9 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
           banner_url: product?.banner_url ?? null,
           show_sales_count: values.show_sales_count,
           sales_count: values.sales_count,
+          preview_enabled: values.preview_enabled,
+          preview_page_count: values.preview_page_count,
+          preview_blur: values.preview_blur,
         }
 
         let productId: string
@@ -270,6 +332,22 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
           })
         }
 
+        // Remove deleted preview images
+        for (const id of removedPreviewImageIds) {
+          await supabase.from('product_preview_images').delete().eq('id', id)
+        }
+
+        // Upload new preview images
+        for (let i = 0; i < newPreviewImageFiles.length; i++) {
+          const file = newPreviewImageFiles[i]
+          const imageUrl = await uploadPreviewImage(productId, file, i)
+          await supabase.from('product_preview_images').insert({
+            product_id: productId,
+            image_url: imageUrl,
+            sort_order: previewImages.length + i,
+          })
+        }
+
         toast.success(mode === 'create' ? 'Product created!' : 'Product updated!')
         router.push('/dashboard/products')
         router.refresh()
@@ -280,7 +358,7 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
         setSaving(false)
       }
     },
-    [mode, product, sellerId, bannerFile, productFiles, removedFileIds, router, supabase]
+    [mode, product, sellerId, bannerFile, productFiles, removedFileIds, newPreviewImageFiles, removedPreviewImageIds, previewImages, router, supabase]
   )
 
   return (
@@ -410,6 +488,150 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
         )}
       </div>
       )}
+
+      {/* Page Preview Section */}
+      <div className="space-y-4 rounded-xl border border-gray-200 p-5 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Show Page Previews</label>
+            <p className="text-xs text-gray-500 mt-0.5">Let visitors preview sample pages before buying</p>
+          </div>
+          <Controller
+            name="preview_enabled"
+            control={control}
+            render={({ field }) => (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={field.value}
+                onClick={() => field.onChange(!field.value)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 ${
+                  field.value ? 'bg-brand-magenta' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                    field.value ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            )}
+          />
+        </div>
+
+        {watch('preview_enabled') && (
+          <div className="space-y-4 pt-2 border-t border-gray-200">
+            {/* Page count + blur row */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {/* Number of pages */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">Number of Pages to Show</label>
+                <select
+                  className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 focus:border-brand-magenta"
+                  {...register('preview_page_count', { valueAsNumber: true })}
+                >
+                  {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(n => (
+                    <option key={n} value={n}>{n} page{n !== 1 ? 's' : ''}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Blur toggle */}
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700">Display Style</label>
+                <Controller
+                  name="preview_blur"
+                  control={control}
+                  render={({ field }) => (
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(false)}
+                        className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-colors ${
+                          !field.value
+                            ? 'border-brand-magenta bg-brand-magenta/10 text-brand-magenta'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        Clear
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => field.onChange(true)}
+                        className={`flex-1 h-10 rounded-lg border text-sm font-medium transition-colors ${
+                          field.value
+                            ? 'border-brand-magenta bg-brand-magenta/10 text-brand-magenta'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        }`}
+                      >
+                        Blurry
+                      </button>
+                    </div>
+                  )}
+                />
+              </div>
+            </div>
+
+            {/* Preview image uploads */}
+            <div className="space-y-3">
+              <label className="block text-sm font-medium text-gray-700">Preview Images</label>
+              <p className="text-xs text-gray-500">Upload images of the pages you want to preview. They will be shown in order.</p>
+
+              {/* Existing preview images */}
+              {previewImages.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {previewImages.map((img, idx) => (
+                    <div key={img.id} className="relative group w-24 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-50">
+                      <img src={img.image_url} alt={`Preview page ${idx + 1}`} className="object-cover w-full h-full" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingPreviewImage(img.id)}
+                        className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute bottom-1 left-1 bg-black/60 text-white text-xs rounded px-1">{idx + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* New preview images to upload */}
+              {newPreviewImagePreviews.length > 0 && (
+                <div className="flex flex-wrap gap-3">
+                  {newPreviewImagePreviews.map((preview, idx) => (
+                    <div key={idx} className="relative group w-24 h-32 rounded-lg overflow-hidden border border-brand-pink/30 bg-brand-cream">
+                      <img src={preview} alt={`New preview ${idx + 1}`} className="object-cover w-full h-full" />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                      <button
+                        type="button"
+                        onClick={() => removeNewPreviewImage(idx)}
+                        className="absolute top-1 right-1 bg-black/60 rounded-full p-0.5 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                      <span className="absolute bottom-1 left-1 bg-brand-magenta/80 text-white text-xs rounded px-1">New</span>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer text-sm text-gray-600">
+                <Upload className="w-4 h-4" />
+                Add preview images
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="sr-only"
+                  onChange={handlePreviewImagesChange}
+                />
+              </label>
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* Tags */}
       <Input

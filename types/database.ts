@@ -87,6 +87,9 @@ export interface Database {
           conversion_message: string | null
           sales_count: number
           show_sales_count: boolean
+          preview_enabled: boolean
+          preview_page_count: number
+          preview_blur: boolean
           created_at: string
           updated_at: string
         }
@@ -104,8 +107,27 @@ export interface Database {
           conversion_message?: string | null
           sales_count?: number
           show_sales_count?: boolean
+          preview_enabled?: boolean
+          preview_page_count?: number
+          preview_blur?: boolean
         }
         Update: Partial<Database['public']['Tables']['products']['Insert']>
+        Relationships: []
+      }
+      product_preview_images: {
+        Row: {
+          id: string
+          product_id: string
+          image_url: string
+          sort_order: number
+          created_at: string
+        }
+        Insert: {
+          product_id: string
+          image_url: string
+          sort_order?: number
+        }
+        Update: Partial<Database['public']['Tables']['product_preview_images']['Insert']>
         Relationships: []
       }
       product_files: {
@@ -299,6 +321,7 @@ export type Review = Database['public']['Tables']['reviews']['Row']
 export type Order = Database['public']['Tables']['orders']['Row']
 export type OrderItem = Database['public']['Tables']['order_items']['Row']
 export type Purchase = Database['public']['Tables']['purchases']['Row']
+export type ProductPreviewImage = Database['public']['Tables']['product_preview_images']['Row']
 
 export type ProductWithSeller = Product & { profiles: Profile }
 export type ProductWithFiles = Product & { product_files: ProductFile[] }

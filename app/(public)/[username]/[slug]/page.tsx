@@ -71,6 +71,17 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   const chatTestimonials = (testimonialsRaw ?? []) as ChatTestimonial[]
 
+  // Fetch preview images if preview is enabled
+  const previewImages: Array<{ id: string; image_url: string; sort_order: number }> = []
+  if (product.preview_enabled) {
+    const { data: previewImagesRaw } = await supabase
+      .from('product_preview_images')
+      .select('id, image_url, sort_order')
+      .eq('product_id', product.id)
+      .order('sort_order')
+    previewImages.push(...(previewImagesRaw ?? []))
+  }
+
   return (
     <div className="min-h-screen bg-white">
       {/* Sticky top bar (shown by CSS on scroll via JS below) */}
@@ -147,6 +158,48 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <div className="mb-10">
               <ProductDescription html={product.description ?? ''} />
             </div>
+
+            {/* Page previews */}
+            {product.preview_enabled && previewImages.length > 0 && (
+              <div className="mb-10">
+                <h2 className="text-2xl font-black text-brand-black mb-2">Preview</h2>
+                <p className="text-sm text-gray-500 mb-5">
+                  {product.preview_blur
+                    ? 'Sample pages — purchase to unlock the full content.'
+                    : 'A look inside the product.'}
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                  {previewImages.slice(0, product.preview_page_count).map((img, idx) => (
+                    <div
+                      key={img.id}
+                      className="relative rounded-xl overflow-hidden border border-gray-200 bg-gray-50 aspect-[3/4] shadow-sm"
+                    >
+                      <Image
+                        src={img.image_url}
+                        alt={`Preview page ${idx + 1}`}
+                        fill
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                        className={`object-cover w-full h-full transition-all${product.preview_blur ? ' blur-sm scale-105' : ''}`}
+                      />
+                      {product.preview_blur && (
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-white/80 backdrop-blur-sm rounded-lg px-3 py-2 text-center shadow">
+                            <svg className="w-5 h-5 text-gray-500 mx-auto mb-1" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <p className="text-xs font-semibold text-gray-600">Buy to unlock</p>
+                          </div>
+                        </div>
+                      )}
+                      <span className="absolute bottom-2 right-2 bg-black/50 text-white text-xs rounded-full px-2 py-0.5">
+                        {idx + 1}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Rating breakdown */}
             {reviews.length > 0 && (

@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm, Controller } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,7 +13,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import type { Product, ProductFormat, ProductStatus } from '@/types/database'
-import { Upload, X, FileText, Image as ImageIcon } from 'lucide-react'
+import { Upload, X, FileText, Image as ImageIcon, Eye } from 'lucide-react'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
 
@@ -69,6 +69,68 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
   )
   const [removedFileIds, setRemovedFileIds] = useState<string[]>([])
   const [saving, setSaving] = useState(false)
+
+  // PDF preview state
+  const [pdfPreviewUrl, setPdfPreviewUrl] = useState<string | null>(null)
+  const [pdfPreviewName, setPdfPreviewName] = useState<string>('')
+  const previewObjectUrlRef = useRef<string | null>(null)
+
+  // Load existing product files on edit
+  useEffect(() => {
+    if (mode !== 'edit' || !product?.id) return
+    supabase
+      .from('product_files')
+      .select('id, file_name, file_url')
+      .eq('product_id', product.id)
+      .order('sort_order')
+      .then(({ data, error }) => {
+        if (error) {
+          toast.error('Could not load product files')
+          return
+        }
+        setExistingFiles(data ?? [])
+      })
+  }, [mode, product?.id, supabase])
+
+  // Clean up preview object URL on unmount
+  useEffect(() => {
+    return () => {
+      if (previewObjectUrlRef.current) {
+        URL.revokeObjectURL(previewObjectUrlRef.current)
+      }
+    }
+  }, [])
+
+  function closePdfPreview() {
+    setPdfPreviewUrl(null)
+    setPdfPreviewName('')
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+      previewObjectUrlRef.current = null
+    }
+  }
+
+  async function previewExistingPdf(file: { id: string; file_name: string; file_url: string }) {
+    const { data, error } = await supabase.storage
+      .from('product-files')
+      .createSignedUrl(file.file_url, 300)
+    if (error || !data) {
+      toast.error('Could not generate preview link')
+      return
+    }
+    setPdfPreviewName(file.file_name)
+    setPdfPreviewUrl(data.signedUrl)
+  }
+
+  function previewNewPdf(file: File) {
+    if (previewObjectUrlRef.current) {
+      URL.revokeObjectURL(previewObjectUrlRef.current)
+    }
+    const url = URL.createObjectURL(file)
+    previewObjectUrlRef.current = url
+    setPdfPreviewName(file.name)
+    setPdfPreviewUrl(url)
+  }
 
   const {
     register,
@@ -401,13 +463,25 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
             {existingFiles.map(f => (
               <li key={f.id} className="flex items-center justify-between p-2 rounded-lg bg-gray-50 border border-gray-100 text-sm">
                 <span className="truncate text-gray-700">{f.file_name}</span>
-                <button
-                  type="button"
-                  onClick={() => removeExistingFile(f.id)}
-                  className="ml-2 text-gray-400 hover:text-red-500"
-                >
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 ml-2 shrink-0">
+                  {f.file_name.toLowerCase().endsWith('.pdf') && (
+                    <button
+                      type="button"
+                      title="Preview PDF"
+                      onClick={() => previewExistingPdf(f)}
+                      className="text-gray-400 hover:text-brand-magenta"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeExistingFile(f.id)}
+                    className="text-gray-400 hover:text-red-500"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -418,9 +492,21 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
             {productFiles.map((f, i) => (
               <li key={i} className="flex items-center justify-between p-2 rounded-lg bg-brand-cream border border-brand-pink/20 text-sm">
                 <span className="truncate text-gray-700">{f.name}</span>
-                <button type="button" onClick={() => removeNewFile(i)} className="ml-2 text-gray-400 hover:text-red-500">
-                  <X className="w-4 h-4" />
-                </button>
+                <div className="flex items-center gap-1 ml-2 shrink-0">
+                  {f.name.toLowerCase().endsWith('.pdf') && (
+                    <button
+                      type="button"
+                      title="Preview PDF"
+                      onClick={() => previewNewPdf(f)}
+                      className="text-gray-400 hover:text-brand-magenta"
+                    >
+                      <Eye className="w-4 h-4" />
+                    </button>
+                  )}
+                  <button type="button" onClick={() => removeNewFile(i)} className="text-gray-400 hover:text-red-500">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               </li>
             ))}
           </ul>
@@ -447,6 +533,35 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
           Cancel
         </Button>
       </div>
+
+      {/* PDF Preview Modal */}
+      {pdfPreviewUrl && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4"
+          onClick={closePdfPreview}
+        >
+          <div
+            className="relative w-full max-w-4xl h-[90vh] bg-white rounded-xl overflow-hidden shadow-2xl flex flex-col"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 shrink-0">
+              <span className="text-sm font-medium text-gray-700 truncate">{pdfPreviewName}</span>
+              <button
+                type="button"
+                onClick={closePdfPreview}
+                className="text-gray-500 hover:text-gray-800 ml-4 shrink-0"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <iframe
+              src={pdfPreviewUrl}
+              className="flex-1 w-full"
+              title={pdfPreviewName}
+            />
+          </div>
+        </div>
+      )}
     </form>
   )
 }

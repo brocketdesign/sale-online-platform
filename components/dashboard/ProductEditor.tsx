@@ -37,6 +37,7 @@ interface Props {
   mode: 'create' | 'edit'
   product?: Product
   sellerId: string
+  isAdmin?: boolean
 }
 
 const FORMAT_OPTIONS: { value: ProductFormat; label: string }[] = [
@@ -57,7 +58,7 @@ const CURRENCY_OPTIONS = [
   { value: 'AUD', label: 'AUD – Australian Dollar' },
 ]
 
-export default function ProductEditor({ mode, product, sellerId }: Props) {
+export default function ProductEditor({ mode, product, sellerId, isAdmin = false }: Props) {
   const router = useRouter()
   const supabase = createClient()
 
@@ -366,6 +367,7 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
       />
 
       {/* Sales Count */}
+      {isAdmin && (
       <div className="space-y-3 rounded-xl border border-gray-200 p-5 bg-gray-50">
         <div className="flex items-center justify-between">
           <div>
@@ -407,6 +409,7 @@ export default function ProductEditor({ mode, product, sellerId }: Props) {
           />
         )}
       </div>
+      )}
 
       {/* Tags */}
       <Input

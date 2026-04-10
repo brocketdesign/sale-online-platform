@@ -27,6 +27,14 @@ export default async function EditProductPage({ params }: Props) {
 
   if (!product) notFound()
 
+  const { data: profile } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', user.id)
+    .single()
+
+  const isAdmin = profile?.is_admin === true
+
   // Fetch per-star counts for synthetic reviews (reviewer_id IS NULL)
   const { data: syntheticReviews } = await supabase
     .from('reviews')
@@ -63,6 +71,7 @@ export default async function EditProductPage({ params }: Props) {
               View Product
             </Link>
           )}
+          {isAdmin && (
           <Link
             href={`/dashboard/products/${id}/testimonials`}
             className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#f0fdf4] border border-[#bbf7d0] text-[#15803d] font-semibold rounded-xl hover:bg-[#dcfce7] transition-colors text-sm"
@@ -70,17 +79,20 @@ export default async function EditProductPage({ params }: Props) {
             <MessageCircle className="w-4 h-4" />
             Screenshot Testimonials
           </Link>
+          )}
         </div>
       </div>
 
       {/* Two-column layout: editor | rating generator */}
       <div className="flex gap-8 items-start">
         <div className="flex-1 min-w-0">
-          <ProductEditor mode="edit" product={product as Product} sellerId={user.id} />
+          <ProductEditor mode="edit" product={product as Product} sellerId={user.id} isAdmin={isAdmin} />
         </div>
+        {isAdmin && (
         <div className="w-80 flex-shrink-0 sticky top-8">
           <RatingGeneratorDashboard productId={id} initialCounts={starCounts} />
         </div>
+        )}
       </div>
     </div>
   )

@@ -47,6 +47,7 @@ export interface Database {
           website_url: string | null
           twitter_url: string | null
           is_pro: boolean
+          is_admin: boolean
           credits: number
           total_swaps: number
           created_at: string
@@ -63,6 +64,7 @@ export interface Database {
           website_url?: string | null
           twitter_url?: string | null
           is_pro?: boolean
+          is_admin?: boolean
           credits?: number
           total_swaps?: number
         }

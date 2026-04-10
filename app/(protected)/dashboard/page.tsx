@@ -25,14 +25,29 @@ export default async function DashboardPage() {
   const { data: orderItems } = productIds.length > 0
     ? await supabase
         .from('order_items')
-        .select('unit_price, quantity')
+        .select('product_id, unit_price, quantity')
         .in('product_id', productIds)
-    : { data: [] as Array<{ unit_price: number; quantity: number }> }
+    : { data: [] as Array<{ product_id: string; unit_price: number; quantity: number }> }
 
-  const totalRevenue = (orderItems ?? []).reduce(
-    (s: number, o: { unit_price: number; quantity: number }) => s + o.unit_price * o.quantity,
-    0
+  // Real revenue and per-product real sales count from actual orders
+  const realOrdersByProduct = (orderItems ?? []).reduce<Record<string, { revenue: number; count: number }>>(
+    (acc, o) => {
+      if (!acc[o.product_id]) acc[o.product_id] = { revenue: 0, count: 0 }
+      acc[o.product_id].revenue += o.unit_price * o.quantity
+      acc[o.product_id].count += o.quantity
+      return acc
+    },
+    {}
   )
+
+  // Compute total revenue including placeholder sales (at product price)
+  let totalRevenue = 0
+  for (const product of (products ?? [])) {
+    const real = realOrdersByProduct[product.id] ?? { revenue: 0, count: 0 }
+    const placeholderCount = Math.max(0, (product.sales_count ?? 0) - real.count)
+    totalRevenue += real.revenue + placeholderCount * product.price
+  }
+
   const publishedCount = (products ?? []).filter((p: { status: string }) => p.status === 'published').length
   const totalSales = (products ?? []).reduce((s: number, p: { sales_count: number }) => s + (p.sales_count ?? 0), 0)
 

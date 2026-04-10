@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
-import { Package, DollarSign, ShoppingBag, TrendingUp, UserCircle } from 'lucide-react'
+import { Package, DollarSign, ShoppingBag, TrendingUp, UserCircle, Key, BookOpen } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -32,6 +32,7 @@ export default async function DashboardPage() {
   // Real revenue and per-product real sales count from actual orders
   const realOrdersByProduct = (orderItems ?? []).reduce<Record<string, { revenue: number; count: number }>>(
     (acc, o) => {
+      if (!o.product_id) return acc
       if (!acc[o.product_id]) acc[o.product_id] = { revenue: 0, count: 0 }
       acc[o.product_id].revenue += o.unit_price * o.quantity
       acc[o.product_id].count += o.quantity
@@ -119,6 +120,18 @@ export default async function DashboardPage() {
             <h3 className="font-bold text-brand-black mb-1">Profile &amp; Security</h3>
             <p className="text-sm text-gray-400">Update your name, avatar &amp; password</p>
             <span className="text-sm text-[#FF007A] font-semibold mt-3 block group-hover:underline">Edit profile →</span>
+          </Link>
+          <Link href="/dashboard/api-keys" className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-all hover:-translate-y-0.5 group">
+            <Key className="w-7 h-7 text-[#FF007A] mb-3" />
+            <h3 className="font-bold text-brand-black mb-1">API Keys</h3>
+            <p className="text-sm text-gray-400">Create &amp; manage keys for external integrations</p>
+            <span className="text-sm text-[#FF007A] font-semibold mt-3 block group-hover:underline">Manage keys →</span>
+          </Link>
+          <Link href="/dashboard/api-docs" className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-all hover:-translate-y-0.5 group">
+            <BookOpen className="w-7 h-7 text-blue-500 mb-3" />
+            <h3 className="font-bold text-brand-black mb-1">API Docs</h3>
+            <p className="text-sm text-gray-400">Reference for all REST endpoints &amp; agent usage</p>
+            <span className="text-sm text-[#FF007A] font-semibold mt-3 block group-hover:underline">View docs →</span>
           </Link>
         </div>
       </div>

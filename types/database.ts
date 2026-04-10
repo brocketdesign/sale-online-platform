@@ -13,6 +13,28 @@ export type OrderStatus = 'pending' | 'paid' | 'failed' | 'refunded' | 'complete
 export interface Database {
   public: {
     Tables: {
+      api_keys: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          key_hash: string
+          key_prefix: string
+          last_used_at: string | null
+          is_active: boolean
+          created_at: string
+        }
+        Insert: {
+          user_id: string
+          name: string
+          key_hash: string
+          key_prefix: string
+          last_used_at?: string | null
+          is_active?: boolean
+        }
+        Update: Partial<Database['public']['Tables']['api_keys']['Insert']>
+        Relationships: []
+      }
       profiles: {
         Row: {
           id: string

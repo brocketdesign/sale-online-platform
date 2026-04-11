@@ -113,37 +113,37 @@ export default async function ProductDetailPage({ params }: PageProps) {
         </div>
       )}
 
-      {/* Mobile sticky bottom bar */}
-      <div className="flex lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] px-4 pt-2 pb-3 flex-col gap-2">
-        {/* Info row: rating + sales count */}
-        {(reviews.length > 0 || (product.show_sales_count && product.sales_count > 0)) && (
-          <div className="flex items-center gap-3 flex-wrap">
-            {reviews.length > 0 && (
-              <StarRating rating={avg} count={reviews.length} size="sm" />
-            )}
-            {product.show_sales_count && product.sales_count > 0 && (
-              <span className="text-xs font-medium text-blue-700">
-                {product.sales_count.toLocaleString()} {product.sales_count === 1 ? 'sale' : 'sales'}
-              </span>
-            )}
-          </div>
-        )}
-        {/* Action row: price + buy button */}
+      {/* Mobile sticky bottom bar — mini product card */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-4px_20px_rgba(0,0,0,0.10)] px-3 py-3">
         <div className="flex items-center gap-3">
-          <div className="flex-shrink-0">
-            <span className="text-xl font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
-            {product.conversion_message && (
-              <p className="text-xs text-gray-500 mt-0.5 leading-tight line-clamp-1">{product.conversion_message}</p>
-            )}
-          </div>
+          {/* Thumbnail */}
+          {product.banner_url && (
+            <div className="w-14 h-14 rounded-xl overflow-hidden flex-shrink-0 bg-gray-100 border border-gray-100">
+              <Image src={product.banner_url} alt={product.title} width={56} height={56} className="w-full h-full object-cover" />
+            </div>
+          )}
+          {/* Title + meta */}
           <div className="flex-1 min-w-0">
-            <AddToCartButton product={product} seller={profile} />
+            <p className="text-sm font-bold text-brand-black truncate leading-tight">{product.title}</p>
+            <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+              {reviews.length > 0 && <StarRating rating={avg} count={reviews.length} size="sm" />}
+              {product.show_sales_count && product.sales_count > 0 && (
+                <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full leading-none">
+                  {product.sales_count.toLocaleString()} sales
+                </span>
+              )}
+            </div>
+          </div>
+          {/* Price + CTA */}
+          <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
+            <span className="text-base font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
+            <AddToCartButton product={product} seller={profile} size="sm" />
           </div>
         </div>
       </div>
 
       {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-36 lg:pb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-28 lg:pb-10">
         <div className="flex gap-10 items-start">
           {/* Left: content */}
           <div className="flex-1 min-w-0">

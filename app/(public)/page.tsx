@@ -6,6 +6,7 @@ import HowItWorksSection from '@/components/landing/HowItWorksSection'
 import TestimonialsSection from '@/components/landing/TestimonialsSection'
 import CategorySection from '@/components/landing/CategorySection'
 import CTASection from '@/components/landing/CTASection'
+import LiveEarningsSection from '@/components/landing/LiveEarningsSection'
 import Footer from '@/components/layout/Footer'
 import { getHeroPlaceholderImages } from '@/lib/xai'
 
@@ -34,6 +35,7 @@ export default async function HomePage() {
       <HeroSection stats={stats} placeholderImages={placeholderImages} />
       <HowItWorksSection />
       <FeaturesSection />
+      <LiveEarningsSection revenue={stats.revenue} />
       <TestimonialsSection />
       <CategorySection />
       <CTASection />

@@ -1,6 +1,40 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { grokChat, grokImage } from '@/lib/xai'
+import type { SupabaseClient } from '@supabase/supabase-js'
+
+/**
+ * Fetch a temporary image URL (e.g. from xAI), upload it to
+ * the `testimonial-assets` Supabase Storage bucket, and return
+ * the permanent public URL.
+ */
+async function uploadGrokImageToStorage(
+  supabase: SupabaseClient,
+  userId: string,
+  tempUrl: string,
+  type: 'avatar' | 'background',
+): Promise<string> {
+  const fetchRes = await fetch(tempUrl)
+  if (!fetchRes.ok) {
+    throw new Error(`Failed to fetch generated image (${fetchRes.status})`)
+  }
+  const arrayBuffer = await fetchRes.arrayBuffer()
+  const contentType = fetchRes.headers.get('content-type') || 'image/jpeg'
+  const ext = contentType.split('/')[1]?.split(';')[0] || 'jpg'
+  const path = `${userId}/grok-${type}-${Date.now()}.${ext}`
+
+  const { error } = await supabase.storage
+    .from('testimonial-assets')
+    .upload(path, arrayBuffer, { contentType, upsert: false })
+
+  if (error) throw new Error(`Storage upload failed: ${error.message}`)
+
+  const { data } = supabase.storage
+    .from('testimonial-assets')
+    .getPublicUrl(path)
+
+  return data.publicUrl
+}
 
 export async function POST(request: Request) {
   const supabase = await createClient()
@@ -71,18 +105,18 @@ Respond ONLY with valid JSON in this exact shape:
         avatarEthnicity ? `${avatarEthnicity} ethnicity` : null,
         avatarAge ? `aged ${avatarAge}` : null,
       ].filter(Boolean).join(', ')
-      const avatarUrl = await grokImage(
+      const tempAvatarUrl = await grokImage(
         `Realistic profile photo of a ${descriptors ? `${descriptors} person` : `person`} named ${parsed.senderName}. Casual selfie style, friendly smile, natural lighting, cropped to face. No text.`
       )
-      result.senderAvatarUrl = avatarUrl
+      result.senderAvatarUrl = await uploadGrokImageToStorage(supabase, user.id, tempAvatarUrl, 'avatar')
     }
 
     // 3. Optionally generate background
     if (generateBackground) {
-      const bgUrl = await grokImage(
+      const tempBgUrl = await grokImage(
         `WhatsApp chat wallpaper background texture. Soft, light, subtle pattern. Pale teal or beige tones. No text, no UI elements, seamless tile.`
       )
-      result.backgroundUrl = bgUrl
+      result.backgroundUrl = await uploadGrokImageToStorage(supabase, user.id, tempBgUrl, 'background')
     }
 
     return NextResponse.json(result)

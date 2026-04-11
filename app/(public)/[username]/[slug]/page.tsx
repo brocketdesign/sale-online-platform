@@ -114,20 +114,36 @@ export default async function ProductDetailPage({ params }: PageProps) {
       )}
 
       {/* Mobile sticky bottom bar */}
-      <div className="flex lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] px-4 py-3 gap-4 items-center">
-        <div className="flex flex-col">
-          <span className="text-xl font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
-          {product.conversion_message && (
-            <span className="text-xs text-gray-500 mt-0.5 line-clamp-1">{product.conversion_message}</span>
-          )}
-        </div>
-        <div className="flex-1">
-          <AddToCartButton product={product} seller={profile} />
+      <div className="flex lg:hidden fixed bottom-0 left-0 right-0 z-40 bg-white border-t border-gray-200 shadow-[0_-2px_12px_rgba(0,0,0,0.08)] px-4 pt-2 pb-3 flex-col gap-2">
+        {/* Info row: rating + sales count */}
+        {(reviews.length > 0 || (product.show_sales_count && product.sales_count > 0)) && (
+          <div className="flex items-center gap-3 flex-wrap">
+            {reviews.length > 0 && (
+              <StarRating rating={avg} count={reviews.length} size="sm" />
+            )}
+            {product.show_sales_count && product.sales_count > 0 && (
+              <span className="text-xs font-medium text-blue-700">
+                {product.sales_count.toLocaleString()} {product.sales_count === 1 ? 'sale' : 'sales'}
+              </span>
+            )}
+          </div>
+        )}
+        {/* Action row: price + buy button */}
+        <div className="flex items-center gap-3">
+          <div className="flex-shrink-0">
+            <span className="text-xl font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
+            {product.conversion_message && (
+              <p className="text-xs text-gray-500 mt-0.5 leading-tight line-clamp-1">{product.conversion_message}</p>
+            )}
+          </div>
+          <div className="flex-1 min-w-0">
+            <AddToCartButton product={product} seller={profile} />
+          </div>
         </div>
       </div>
 
       {/* Main layout */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-28 lg:pb-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 pb-36 lg:pb-10">
         <div className="flex gap-10 items-start">
           {/* Left: content */}
           <div className="flex-1 min-w-0">

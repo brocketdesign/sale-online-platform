@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { grokChat, grokImage } from '@/lib/xai'
 import type { SupabaseClient } from '@supabase/supabase-js'
 
@@ -40,6 +40,9 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  // Use service-role client for storage uploads (bypasses RLS, reliable server-side)
+  const serviceSupabase = await createServiceClient()
 
   const body = await request.json()
   const { productTitle, productDescription, generateAvatar, generateBackground, avatarGender, avatarEthnicity, avatarAge } = body as {
@@ -108,7 +111,7 @@ Respond ONLY with valid JSON in this exact shape:
       const tempAvatarUrl = await grokImage(
         `Realistic profile photo of a ${descriptors ? `${descriptors} person` : `person`} named ${parsed.senderName}. Casual selfie style, friendly smile, natural lighting, cropped to face. No text.`
       )
-      result.senderAvatarUrl = await uploadGrokImageToStorage(supabase, user.id, tempAvatarUrl, 'avatar')
+      result.senderAvatarUrl = await uploadGrokImageToStorage(serviceSupabase, user.id, tempAvatarUrl, 'avatar')
     }
 
     // 3. Optionally generate background
@@ -116,7 +119,7 @@ Respond ONLY with valid JSON in this exact shape:
       const tempBgUrl = await grokImage(
         `WhatsApp chat wallpaper background texture. Soft, light, subtle pattern. Pale teal or beige tones. No text, no UI elements, seamless tile.`
       )
-      result.backgroundUrl = await uploadGrokImageToStorage(supabase, user.id, tempBgUrl, 'background')
+      result.backgroundUrl = await uploadGrokImageToStorage(serviceSupabase, user.id, tempBgUrl, 'background')
     }
 
     return NextResponse.json(result)

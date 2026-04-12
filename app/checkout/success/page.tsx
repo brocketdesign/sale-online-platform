@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { stripe } from '@/lib/stripe'
-import { createServiceClient } from '@/lib/supabase/server'
+import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { CheckCircle2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { sendPurchaseConfirmationEmail } from '@/lib/resend'
@@ -38,7 +38,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
   // Parse metadata
   const meta = session.metadata ?? {}
-  const buyerEmail = session.customer_email ?? meta.buyer_email ?? ''
+  const buyerEmail = session.customer_email ?? meta.buyer_email ?? session.customer_details?.email ?? ''
   const buyerName = meta.buyer_name ?? ''
   const buyerCountry = meta.buyer_country ?? ''
   const tipAmount = parseInt(meta.tip_amount ?? '0', 10)
@@ -67,18 +67,33 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
     // Resolve buyer user id (may not exist)
     let buyerUserId: string | null = null
 
-    const { data: existingUserData } = await supabase.auth.admin.listUsers()
-    const existingUser = existingUserData?.users?.find((u: { email?: string }) => u.email === buyerEmail)
-    buyerUserId = existingUser?.id ?? null
+    // Option 1: use the currently authenticated session — most reliable, avoids pagination
+    const userClient = await createClient()
+    const { data: { user: currentUser } } = await userClient.auth.getUser()
+    if (currentUser?.email?.toLowerCase() === buyerEmail.toLowerCase()) {
+      buyerUserId = currentUser.id
+    }
 
-    // Auto-create buyer account if not found
+    // Option 2: search via admin listUsers with larger page size
     if (!buyerUserId && buyerEmail) {
-      const { data: newUser } = await supabase.auth.admin.createUser({
+      const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+      const found = listData?.users?.find(
+        (u: { email?: string }) => u.email?.toLowerCase() === buyerEmail.toLowerCase()
+      )
+      buyerUserId = found?.id ?? null
+    }
+
+    // Option 3: auto-create account for guest buyers
+    if (!buyerUserId && buyerEmail) {
+      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
         email: buyerEmail,
         email_confirm: true,
         user_metadata: { full_name: buyerName },
       })
-      buyerUserId = newUser.user?.id ?? null
+      if (createUserError) {
+        console.error('[success] createUser error', createUserError)
+      }
+      buyerUserId = newUser?.user?.id ?? null
     }
 
     // Create order
@@ -117,8 +132,14 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
       // Create purchases for the actual recipient (gift or buyer)
       const recipientEmail = giftRecipientEmail || buyerEmail
-      const recipientUser = existingUserData?.users?.find((u: { email?: string; id: string }) => u.email === recipientEmail)
-      const recipientId = recipientUser?.id ?? buyerUserId
+      let recipientId: string | null = buyerUserId
+      if (giftRecipientEmail) {
+        const { data: giftListData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+        const giftRecipient = giftListData?.users?.find(
+          (u: { email?: string }) => u.email?.toLowerCase() === giftRecipientEmail.toLowerCase()
+        )
+        recipientId = giftRecipient?.id ?? null
+      }
 
       const purchases = cartItems.map(item => ({
         order_id: orderId!,

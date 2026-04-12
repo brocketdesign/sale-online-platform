@@ -83,6 +83,7 @@ export async function POST(request: Request) {
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout/cancel`,
       metadata: {
+        buyer_email: buyerInfo.email,
         buyer_name: buyerInfo.name,
         buyer_country: buyerInfo.country,
         buyer_vat_id: buyerInfo.vatId ?? '',

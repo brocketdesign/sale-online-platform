@@ -5,6 +5,8 @@ import { createClient, createServiceClient } from '@/lib/supabase/server'
 import { CheckCircle2 } from 'lucide-react'
 import Button from '@/components/ui/Button'
 import { sendPurchaseConfirmationEmail } from '@/lib/resend'
+import ClearCart from '@/components/checkout/ClearCart'
+import SetPasswordRedirect from '@/components/checkout/SetPasswordRedirect'
 
 interface Props {
   searchParams: Promise<{ session_id?: string }>
@@ -72,6 +74,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   // Priority: logged-in session > listUsers lookup > create new account
   // The typed checkout email is used for receipts only; library access goes to whoever is authenticated.
   let buyerUserId: string | null = null
+  let isNewUser = false
   const userClient = await createClient()
   const { data: { user: currentUser } } = await userClient.auth.getUser()
   console.log('[success] currentUser from session:', currentUser ? `${currentUser.id} <${currentUser.email}>` : 'none')
@@ -98,6 +101,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
       console.error('[success] createUser error', createUserError)
     }
     buyerUserId = newUser?.user?.id ?? null
+    isNewUser = !!buyerUserId
     console.log('[success] buyerUserId resolved via createUser:', buyerUserId)
   }
   console.log('[success] final buyerUserId:', buyerUserId)
@@ -246,6 +250,10 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
   return (
     <div className="min-h-screen bg-brand-offwhite flex flex-col items-center justify-center px-4 text-center">
+      <ClearCart />
+      {isNewUser ? (
+        <SetPasswordRedirect email={buyerEmail} />
+      ) : (
       <div className="bg-white rounded-3xl p-10 shadow-sm border border-gray-100 max-w-md w-full">
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-500" />
@@ -274,6 +282,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
           </Link>
         </div>
       </div>
+      )}
     </div>
   )
 }

@@ -82,6 +82,9 @@ export async function POST(request: Request) {
       customer_email: buyerInfo.email,
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${siteUrl}/checkout/cancel`,
+      payment_intent_data: {
+        statement_descriptor: 'SELLIFY',
+      },
       metadata: {
         buyer_email: buyerInfo.email,
         buyer_name: buyerInfo.name,

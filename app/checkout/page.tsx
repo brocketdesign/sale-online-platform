@@ -328,7 +328,7 @@ function CartItemRow({ item }: { item: import('@/types/database').CartItem }) {
         <span className="font-semibold text-sm">{formatPrice(item.price, item.currency)}</span>
         <button
           type="button"
-          onClick={() => removeItem(item.id)}
+          onClick={() => removeItem(item.productId)}
           className="text-gray-300 hover:text-red-500 transition-colors"
         >
           <X className="w-4 h-4" />

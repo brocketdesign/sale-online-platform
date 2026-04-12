@@ -36,7 +36,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Buyer email required' }, { status: 400 })
     }
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    const siteUrl = new URL(request.url).origin
 
     // Build line items from cart
     const lineItems = items.map(item => ({

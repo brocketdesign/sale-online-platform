@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,6 +13,7 @@ import { formatPrice, COUNTRIES, getVatRate } from '@/lib/utils'
 import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { Gift, X, ChevronDown } from 'lucide-react'
+import { createClient } from '@/lib/supabase/client'
 
 const contactSchema = z.object({
   email: z.string().email('Valid email required'),
@@ -40,16 +41,27 @@ export default function CheckoutPage() {
   const [giftEmail, setGiftEmail] = useState('')
   const [giftNote, setGiftNote] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isLoggedIn, setIsLoggedIn] = useState(false)
 
   const {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm<ContactForm>({
     resolver: zodResolver(contactSchema),
     defaultValues: { country: 'US' },
   })
+
+  // Pre-fill form from logged-in session
+  useEffect(() => {
+    const supabase = createClient()
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user?.email) { setValue('email', user.email); setIsLoggedIn(true) }
+      if (user?.user_metadata?.full_name) setValue('name', user.user_metadata.full_name)
+    })
+  }, [setValue])
 
   const countryCode = watch('country')
   const sub = subtotal()
@@ -217,6 +229,8 @@ export default function CheckoutPage() {
                     type="email"
                     placeholder="you@example.com"
                     error={errors.email?.message}
+                    readOnly={isLoggedIn}
+                    className={isLoggedIn ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}
                     {...register('email')}
                   />
                   <Input

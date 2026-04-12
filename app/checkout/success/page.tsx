@@ -51,50 +51,74 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
 
   const supabase = createServiceClient()
 
+  console.log('[success] ── START ──────────────────────────────')
+  console.log('[success] session_id:', session_id)
+  console.log('[success] payment_status:', session.payment_status)
+  console.log('[success] buyerEmail:', buyerEmail)
+  console.log('[success] cartItems:', JSON.stringify(cartItems))
+
   // Idempotency check — if already processed, skip writes
-  const { data: existingOrder } = await supabase
+  const { data: existingOrder, error: existingOrderError } = await supabase
     .from('orders')
     .select('id')
     .eq('stripe_session_id', session_id)
     .maybeSingle()
 
+  console.log('[success] existingOrder:', existingOrder, '| error:', existingOrderError)
+
   let orderId: string | null = existingOrder?.id ?? null
 
+  // Resolve the buyer's user id — needed for both new and recovery paths
+  // Priority: logged-in session > listUsers lookup > create new account
+  // The typed checkout email is used for receipts only; library access goes to whoever is authenticated.
+  let buyerUserId: string | null = null
+  const userClient = await createClient()
+  const { data: { user: currentUser } } = await userClient.auth.getUser()
+  console.log('[success] currentUser from session:', currentUser ? `${currentUser.id} <${currentUser.email}>` : 'none')
+  if (currentUser) {
+    // Always prefer the authenticated session — this is who will access their library
+    buyerUserId = currentUser.id
+    console.log('[success] buyerUserId resolved via session cookie')
+  }
+  if (!buyerUserId && buyerEmail) {
+    const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    const found = listData?.users?.find(
+      (u: { email?: string }) => u.email?.toLowerCase() === buyerEmail.toLowerCase()
+    )
+    buyerUserId = found?.id ?? null
+    console.log('[success] buyerUserId resolved via listUsers:', buyerUserId)
+  }
+  if (!buyerUserId && buyerEmail) {
+    const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
+      email: buyerEmail,
+      email_confirm: true,
+      user_metadata: { full_name: buyerName },
+    })
+    if (createUserError) {
+      console.error('[success] createUser error', createUserError)
+    }
+    buyerUserId = newUser?.user?.id ?? null
+    console.log('[success] buyerUserId resolved via createUser:', buyerUserId)
+  }
+  console.log('[success] final buyerUserId:', buyerUserId)
+
+  // Determine recipient (gift or buyer)
+  const recipientEmail = giftRecipientEmail || buyerEmail
+  let recipientId: string | null = buyerUserId
+  if (giftRecipientEmail) {
+    const { data: giftListData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
+    const giftRecipient = giftListData?.users?.find(
+      (u: { email?: string }) => u.email?.toLowerCase() === giftRecipientEmail.toLowerCase()
+    )
+    recipientId = giftRecipient?.id ?? null
+    console.log('[success] gift recipient id:', recipientId)
+  }
+  console.log('[success] recipientEmail:', recipientEmail, '| recipientId:', recipientId)
+
   if (!existingOrder) {
+    console.log('[success] order does not exist — creating')
     const totalAmount = cartItems.reduce((s, i) => s + i.price, 0) + tipAmount + vatAmount
     const currency = cartItems[0]?.currency ?? 'USD'
-
-    // Resolve buyer user id (may not exist)
-    let buyerUserId: string | null = null
-
-    // Option 1: use the currently authenticated session — most reliable, avoids pagination
-    const userClient = await createClient()
-    const { data: { user: currentUser } } = await userClient.auth.getUser()
-    if (currentUser?.email?.toLowerCase() === buyerEmail.toLowerCase()) {
-      buyerUserId = currentUser.id
-    }
-
-    // Option 2: search via admin listUsers with larger page size
-    if (!buyerUserId && buyerEmail) {
-      const { data: listData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-      const found = listData?.users?.find(
-        (u: { email?: string }) => u.email?.toLowerCase() === buyerEmail.toLowerCase()
-      )
-      buyerUserId = found?.id ?? null
-    }
-
-    // Option 3: auto-create account for guest buyers
-    if (!buyerUserId && buyerEmail) {
-      const { data: newUser, error: createUserError } = await supabase.auth.admin.createUser({
-        email: buyerEmail,
-        email_confirm: true,
-        user_metadata: { full_name: buyerName },
-      })
-      if (createUserError) {
-        console.error('[success] createUser error', createUserError)
-      }
-      buyerUserId = newUser?.user?.id ?? null
-    }
 
     // Create order
     const { data: order, error: orderError } = await supabase
@@ -119,6 +143,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
       console.error('[success] order insert error', orderError)
     } else {
       orderId = order.id
+      console.log('[success] order created:', orderId)
 
       // Insert order items
       const orderItems = cartItems.map(item => ({
@@ -128,20 +153,31 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         unit_price: item.price,
         currency: item.currency,
       }))
-      await supabase.from('order_items').insert(orderItems)
+      const { error: orderItemsError } = await supabase.from('order_items').insert(orderItems)
+      if (orderItemsError) console.error('[success] order_items insert error', orderItemsError)
+      else console.log('[success] order_items inserted')
+    }
+  } else {
+    console.log('[success] order already exists:', orderId)
+  }
 
-      // Create purchases for the actual recipient (gift or buyer)
-      const recipientEmail = giftRecipientEmail || buyerEmail
-      let recipientId: string | null = buyerUserId
-      if (giftRecipientEmail) {
-        const { data: giftListData } = await supabase.auth.admin.listUsers({ perPage: 1000 })
-        const giftRecipient = giftListData?.users?.find(
-          (u: { email?: string }) => u.email?.toLowerCase() === giftRecipientEmail.toLowerCase()
-        )
-        recipientId = giftRecipient?.id ?? null
-      }
+  // Ensure purchases exist for this order — runs on both new and already-existing orders
+  // (recovers from partial failures where order was created but purchases were not)
+  if (orderId) {
+    const { data: existingPurchases, error: existingPurchasesError } = await supabase
+      .from('purchases')
+      .select('product_id')
+      .eq('order_id', orderId)
 
-      const purchases = cartItems.map(item => ({
+    console.log('[success] existingPurchases for order:', existingPurchases, '| error:', existingPurchasesError)
+
+    const existingProductIds = new Set((existingPurchases ?? []).map((p: { product_id: string | null }) => p.product_id))
+    const missingItems = cartItems.filter(item => !existingProductIds.has(item.productId))
+    console.log('[success] missingItems count:', missingItems.length)
+
+    if (missingItems.length > 0) {
+      console.log('[success] inserting missing purchases', { recipientId, recipientEmail, count: missingItems.length })
+      const purchases = missingItems.map(item => ({
         order_id: orderId!,
         product_id: item.productId,
         buyer_id: recipientId,
@@ -149,21 +185,21 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         amount_paid: item.price,
         currency: item.currency,
       }))
-      await supabase.from('purchases').insert(purchases)
-
-      // Send purchase confirmation email (non-critical)
-      if (recipientEmail) {
+      const { error: purchasesError } = await supabase.from('purchases').insert(purchases)
+      if (purchasesError) {
+        console.error('[success] purchases insert error', purchasesError)
+      } else {
+        console.log('[success] purchases inserted OK')
+        // Send purchase confirmation email (non-critical)
         try {
-          // Fetch product + seller info for the first item for the email
           const firstItem = cartItems[0]
-          if (firstItem) {
+          if (firstItem && recipientEmail) {
             const { data: productData } = await supabase
               .from('products')
               .select('id, title, banner_url, seller:profiles!products_seller_id_fkey(display_name, username)')
               .eq('id', firstItem.productId)
               .maybeSingle()
 
-            // Get the inserted purchase id for the download link
             const { data: firstPurchase } = await supabase
               .from('purchases')
               .select('id')
@@ -184,7 +220,6 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
               purchaseId: firstPurchase?.id ?? '',
             })
 
-            // Mark email sent
             if (firstPurchase?.id) {
               await supabase
                 .from('purchases')
@@ -195,18 +230,19 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         } catch (emailError) {
           console.error('[success] purchase email error', emailError)
         }
-      }
 
-      // Increment sales_count for each product
-      for (const item of cartItems) {
-        try {
-          await supabase.rpc('increment_sales_count', { product_id: item.productId })
-        } catch {
-          // non-critical, silently skip
+        // Increment sales_count for each product
+        for (const item of missingItems) {
+          try {
+            await supabase.rpc('increment_sales_count', { product_id: item.productId })
+          } catch {
+            // non-critical, silently skip
+          }
         }
       }
     }
   }
+  console.log('[success] ── END ────────────────────────────────')
 
   return (
     <div className="min-h-screen bg-brand-offwhite flex flex-col items-center justify-center px-4 text-center">

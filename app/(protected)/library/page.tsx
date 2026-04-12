@@ -47,7 +47,7 @@ export default async function LibraryPage() {
         )
       )
     `)
-    .eq('buyer_id', user.id)
+    .or(`buyer_id.eq.${user.id},buyer_email.eq.${user.email}`)
     .order('created_at', { ascending: false })
 
   const purchases = (purchasesRaw ?? []) as unknown as PurchaseWithProduct[]
@@ -147,7 +147,7 @@ export default async function LibraryPage() {
                       </span>
                       <div className="flex items-center gap-2">
                         <Link
-                          href={`/library/${purchase.id}`}
+                          href={`/library/${purchase.id}/read`}
                           className="inline-flex items-center gap-1.5 px-3 py-2 bg-brand-black text-white text-sm font-medium rounded-xl hover:bg-brand-black/80 transition-colors"
                         >
                           <BookOpen className="w-4 h-4" />

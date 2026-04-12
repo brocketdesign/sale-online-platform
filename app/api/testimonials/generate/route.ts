@@ -42,7 +42,7 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   // Use service-role client for storage uploads (bypasses RLS, reliable server-side)
-  const serviceSupabase = await createServiceClient()
+  const serviceSupabase = createServiceClient()
 
   const body = await request.json()
   const { productTitle, productDescription, generateAvatar, generateBackground, avatarGender, avatarEthnicity, avatarAge } = body as {

@@ -18,7 +18,7 @@ export async function GET(request: Request) {
     }
   }
 
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   const THREE_DAYS_AGO = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000).toISOString()
 

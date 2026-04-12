@@ -49,7 +49,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
     meta.cart_items ?? '[]'
   )
 
-  const supabase = await createServiceClient()
+  const supabase = createServiceClient()
 
   // Idempotency check — if already processed, skip writes
   const { data: existingOrder } = await supabase

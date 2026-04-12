@@ -28,7 +28,7 @@ export async function GET(_request: Request, { params }: Params) {
     } | null
   }
 
-  const serviceClient = await createServiceClient()
+  const serviceClient = createServiceClient()
   const { data: purchaseRaw } = await serviceClient
     .from('purchases')
     .select(`

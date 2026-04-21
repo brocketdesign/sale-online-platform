@@ -14,6 +14,7 @@ import ShareButton from '@/components/products/ShareButton'
 import WhatsAppScreenshot from '@/components/testimonials/WhatsAppScreenshot'
 import type { ChatTestimonial } from '@/components/testimonials/WhatsAppScreenshot'
 import { formatPrice } from '@/lib/utils'
+import { getTranslations } from '@/lib/i18n'
 
 interface PageProps {
   params: Promise<{ username: string; slug: string }>
@@ -51,6 +52,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
   if (!productRaw) notFound()
 
   const product = productRaw as any
+  const t = getTranslations(product.page_language)
 
   const { data: reviewsRaw } = await supabase
     .from('reviews')
@@ -129,7 +131,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
               {reviews.length > 0 && <StarRating rating={avg} count={reviews.length} size="sm" />}
               {product.show_sales_count && product.sales_count > 0 && (
                 <span className="inline-flex items-center bg-blue-50 text-blue-700 text-xs font-semibold px-2 py-0.5 rounded-full leading-none">
-                  {product.sales_count.toLocaleString()} sales
+                  {t.salesCount(product.sales_count)}
                 </span>
               )}
             </div>
@@ -178,11 +180,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {/* Page previews */}
             {product.preview_enabled && previewImages.length > 0 && (
               <div className="mb-10">
-                <h2 className="text-2xl font-black text-brand-black mb-2">Preview</h2>
+                <h2 className="text-2xl font-black text-brand-black mb-2">{t.preview}</h2>
                 <p className="text-sm text-gray-500 mb-5">
-                  {product.preview_blur
-                    ? 'Sample pages — purchase to unlock the full content.'
-                    : 'A look inside the product.'}
+                  {product.preview_blur ? t.previewBlurSubtitle : t.previewSubtitle}
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
                   {previewImages.slice(0, product.preview_page_count).map((img, idx) => (
@@ -204,7 +204,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                               <path strokeLinecap="round" strokeLinejoin="round" d="M12 15a3 3 0 100-6 3 3 0 000 6z" />
                               <path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                             </svg>
-                            <p className="text-xs font-semibold text-gray-600">Buy to unlock</p>
+                            <p className="text-xs font-semibold text-gray-600">{t.buyUnlock}</p>
                           </div>
                         </div>
                       )}
@@ -220,7 +220,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {/* Rating breakdown */}
             {reviews.length > 0 && (
               <div className="mb-10">
-                <h2 className="text-2xl font-black text-brand-black mb-6">Ratings</h2>
+                <h2 className="text-2xl font-black text-brand-black mb-6">{t.ratings}</h2>
                 <RatingBreakdown reviews={reviews} avg={avg} />
               </div>
             )}
@@ -229,20 +229,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {chatTestimonials.length > 0 && (
               <div className="mb-10">
                 <div className="flex items-center gap-3 mb-6">
-                  <h2 className="text-2xl font-black text-brand-black">Verified Reviews</h2>
+                  <h2 className="text-2xl font-black text-brand-black">{t.verifiedReviews}</h2>
                   <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#f0fdf4] border border-[#bbf7d0] text-[#15803d] text-xs font-bold rounded-full">
                     <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd"/>
                     </svg>
-                    Verified
+                    {t.verifiedBadge}
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 mb-6">Real messages from customers, shared with permission.</p>
+                <p className="text-sm text-gray-500 mb-6">{t.verifiedReviewsSubtitle}</p>
                 <div className="flex flex-wrap gap-5">
-                  {chatTestimonials.map((t) => (
+                  {chatTestimonials.map((testimonial) => (
                     <WhatsAppScreenshot
-                      key={t.id}
-                      testimonial={t}
+                      key={testimonial.id}
+                      testimonial={testimonial}
                       sellerName={profile.display_name ?? profile.username}
                       sellerAvatarUrl={profile.avatar_url ?? null}
                     />
@@ -284,9 +284,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
               {reviews.length > 0 && (
                 <div className="mt-5 pt-5 border-t border-gray-100">
                   <h3 className="text-sm font-bold text-brand-black mb-3 flex items-center justify-between">
-                    Ratings
+                    {t.ratings}
                     <span className="text-sm font-semibold text-gray-500">
-                      ★ {avg.toFixed(1)} ({reviews.length} rating{reviews.length !== 1 ? 's' : ''})
+                      ★ {avg.toFixed(1)} ({reviews.length} {t.rating}{reviews.length !== 1 ? 's' : ''})
                     </span>
                   </h3>
                   <RatingBreakdown reviews={reviews} avg={avg} compact />
@@ -310,7 +310,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 </div>
               </div>
               <Link href={`/${profile.username}`} className="text-sm text-[#FF007A] font-semibold hover:underline">
-                View all products →
+                {t.viewStore} →
               </Link>
             </div>
           </div>

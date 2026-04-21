@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button'
 import { sendPurchaseConfirmationEmail } from '@/lib/resend'
 import ClearCart from '@/components/checkout/ClearCart'
 import SetPasswordRedirect from '@/components/checkout/SetPasswordRedirect'
+import { getTranslations } from '@/lib/i18n'
 
 interface Props {
   searchParams: Promise<{ session_id?: string }>
@@ -27,12 +28,13 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   }
 
   if (session.payment_status !== 'paid') {
+    const t = getTranslations(session.metadata?.page_language)
     return (
       <div className="min-h-screen bg-brand-offwhite flex flex-col items-center justify-center px-4 text-center">
-        <h1 className="text-2xl font-bold text-red-600 mb-3">Payment not confirmed</h1>
-        <p className="text-gray-500 mb-6">Your payment has not been processed. Please try again.</p>
+        <h1 className="text-2xl font-bold text-red-600 mb-3">{t.paymentNotConfirmedTitle}</h1>
+        <p className="text-gray-500 mb-6">{t.paymentNotConfirmedBody}</p>
         <Link href="/checkout">
-          <Button variant="primary">Back to Checkout</Button>
+          <Button variant="primary">{t.backToCheckout}</Button>
         </Link>
       </div>
     )
@@ -46,6 +48,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const tipAmount = parseInt(meta.tip_amount ?? '0', 10)
   const vatAmount = parseInt(meta.vat_amount ?? '0', 10)
   const giftRecipientEmail = meta.gift_recipient_email ?? ''
+  const t = getTranslations(meta.page_language)
   const giftNote = meta.gift_note ?? ''
   const cartItems: Array<{ productId: string; price: number; currency: string }> = JSON.parse(
     meta.cart_items ?? '[]'
@@ -258,26 +261,30 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
         <div className="flex justify-center mb-4">
           <CheckCircle2 className="w-16 h-16 text-green-500" />
         </div>
-        <h1 className="text-2xl font-bold text-brand-black mb-2">Payment Successful!</h1>
+        <h1 className="text-2xl font-bold text-brand-black mb-2">{t.paymentSuccessTitle}</h1>
         {giftRecipientEmail ? (
           <p className="text-gray-500 mb-6">
-            Your gift has been sent to <strong>{giftRecipientEmail}</strong>.
+            {t.paymentSuccessGift(giftRecipientEmail).split(giftRecipientEmail).map((part, i, arr) =>
+              i < arr.length - 1 ? <span key={i}>{part}<strong>{giftRecipientEmail}</strong></span> : <span key={i}>{part}</span>
+            )}
           </p>
         ) : (
           <p className="text-gray-500 mb-6">
-            A confirmation has been sent to <strong>{buyerEmail}</strong>.
+            {t.paymentSuccessEmail(buyerEmail).split(buyerEmail).map((part, i, arr) =>
+              i < arr.length - 1 ? <span key={i}>{part}<strong>{buyerEmail}</strong></span> : <span key={i}>{part}</span>
+            )}
           </p>
         )}
 
         <div className="flex flex-col gap-3">
           <Link href="/library">
             <Button variant="primary" className="w-full">
-              Go to My Library
+              {t.goToLibrary}
             </Button>
           </Link>
           <Link href="/discover">
             <Button variant="outline" className="w-full">
-              Continue Shopping
+              {t.continueShopping}
             </Button>
           </Link>
         </div>

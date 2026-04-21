@@ -14,6 +14,7 @@ import Input from '@/components/ui/Input'
 import Select from '@/components/ui/Select'
 import type { Product, ProductFormat, ProductStatus } from '@/types/database'
 import { Upload, X, FileText, Image as ImageIcon, Eye, Loader2 } from 'lucide-react'
+import { LANGUAGE_OPTIONS, type PageLanguage } from '@/lib/i18n'
 
 const MDEditor = dynamic(() => import('@uiw/react-md-editor'), { ssr: false })
 
@@ -64,6 +65,7 @@ const schema = z.object({
   preview_enabled: z.boolean(),
   preview_page_count: z.number().int().min(1).max(10),
   preview_blur: z.boolean(),
+  page_language: z.enum(['en', 'fr', 'es'] as const),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -280,6 +282,7 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
       preview_enabled: (product as any)?.preview_enabled ?? false,
       preview_page_count: (product as any)?.preview_page_count ?? 3,
       preview_blur: (product as any)?.preview_blur ?? false,
+      page_language: ((product as any)?.page_language ?? 'en') as PageLanguage,
     },
   })
 
@@ -356,6 +359,7 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
           preview_enabled: values.preview_enabled,
           preview_page_count: values.preview_page_count,
           preview_blur: values.preview_blur,
+          page_language: values.page_language,
         }
 
         let productId: string
@@ -733,6 +737,20 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
             </div>
           </div>
         )}
+      </div>
+
+      {/* Page Language */}
+      <div className="space-y-1">
+        <label className="block text-sm font-medium text-gray-700">Page Language</label>
+        <p className="text-xs text-gray-500">The product page and checkout will be displayed in this language</p>
+        <select
+          className="w-full max-w-xs h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 focus:border-brand-magenta"
+          {...register('page_language')}
+        >
+          {LANGUAGE_OPTIONS.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.flag} {opt.label}</option>
+          ))}
+        </select>
       </div>
 
       {/* Tags */}

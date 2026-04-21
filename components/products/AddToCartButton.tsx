@@ -27,6 +27,7 @@ export default function AddToCartButton({ product, seller, size = 'lg' }: Props)
       sellerName: seller.display_name || seller.username,
       sellerUsername: seller.username,
       slug: product.slug,
+      pageLanguage: (product as any).page_language ?? 'en',
     })
     router.push('/checkout')
   }

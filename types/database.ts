@@ -90,6 +90,7 @@ export interface Database {
           preview_enabled: boolean
           preview_page_count: number
           preview_blur: boolean
+          page_language: string
           created_at: string
           updated_at: string
         }
@@ -110,6 +111,7 @@ export interface Database {
           preview_enabled?: boolean
           preview_page_count?: number
           preview_blur?: boolean
+          page_language?: string
         }
         Update: Partial<Database['public']['Tables']['products']['Insert']>
         Relationships: []
@@ -336,4 +338,5 @@ export interface CartItem {
   sellerName: string
   sellerUsername: string
   slug: string
+  pageLanguage?: string
 }

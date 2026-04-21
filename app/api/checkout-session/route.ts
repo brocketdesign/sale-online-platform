@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { stripe } from '@/lib/stripe'
 import type { CartItem } from '@/types/database'
+import { STRIPE_LOCALE_MAP, type PageLanguage } from '@/lib/i18n'
 
 interface GiftInfo {
   recipientEmail: string
@@ -80,8 +81,9 @@ export async function POST(request: Request) {
       mode: 'payment',
       line_items: lineItems,
       customer_email: buyerInfo.email,
+      locale: (STRIPE_LOCALE_MAP[(items[0]?.pageLanguage ?? 'en') as PageLanguage] ?? 'auto') as any,
       success_url: `${siteUrl}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${siteUrl}/checkout/cancel`,
+      cancel_url: `${siteUrl}/checkout/cancel?lang=${items[0]?.pageLanguage ?? 'en'}`,
       payment_intent_data: {
         statement_descriptor: 'SELLIFY',
       },
@@ -101,6 +103,7 @@ export async function POST(request: Request) {
         vat_amount: String(vatAmount),
         gift_recipient_email: gift?.recipientEmail ?? '',
         gift_note: gift?.note ?? '',
+        page_language: items[0]?.pageLanguage ?? 'en',
       },
     })
 

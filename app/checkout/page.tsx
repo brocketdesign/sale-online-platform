@@ -14,6 +14,7 @@ import Button from '@/components/ui/Button'
 import Input from '@/components/ui/Input'
 import { Gift, X, ChevronDown } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
+import { getTranslations } from '@/lib/i18n'
 
 const contactSchema = z.object({
   email: z.string().email('Valid email required'),
@@ -24,16 +25,17 @@ const contactSchema = z.object({
 
 type ContactForm = z.infer<typeof contactSchema>
 
-const TIP_OPTIONS = [
-  { label: 'No tip', value: 0 },
-  { label: '15%', value: 0.15 },
-  { label: '20%', value: 0.2 },
-  { label: '25%', value: 0.25 },
+const TIP_PERCENT_OPTIONS = [
+  { value: 0 },
+  { value: 0.15 },
+  { value: 0.2 },
+  { value: 0.25 },
 ]
 
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, clearCart, subtotal } = useCart()
+  const t = getTranslations(items[0]?.pageLanguage)
   const [tipPercent, setTipPercent] = useState(0)
   const [customTip, setCustomTip] = useState('')
   const [isCustomTip, setIsCustomTip] = useState(false)
@@ -107,10 +109,10 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-brand-offwhite flex flex-col items-center justify-center text-center px-4">
-        <h1 className="text-2xl font-bold text-brand-black mb-3">Your cart is empty</h1>
-        <p className="text-gray-500 mb-6">Add some products before checking out.</p>
+        <h1 className="text-2xl font-bold text-brand-black mb-3">{getTranslations(undefined).emptyCartTitle}</h1>
+        <p className="text-gray-500 mb-6">{getTranslations(undefined).emptyCartBody}</p>
         <Link href="/discover">
-          <Button variant="primary">Browse Products</Button>
+          <Button variant="primary">{getTranslations(undefined).browseProducts}</Button>
         </Link>
       </div>
     )
@@ -120,7 +122,7 @@ export default function CheckoutPage() {
     <div className="min-h-screen bg-brand-offwhite">
       <div className="max-w-5xl mx-auto px-4 py-10">
         <Link href="/discover" className="text-sm text-gray-500 hover:text-brand-magenta mb-6 inline-block">
-          ← Continue shopping
+          {t.continueShoppingLink}
         </Link>
 
         <form onSubmit={handleSubmit(onSubmit)}>
@@ -129,7 +131,7 @@ export default function CheckoutPage() {
             <div className="space-y-6">
               {/* Cart items */}
               <section className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h2 className="font-semibold text-lg mb-4">Your Order</h2>
+                <h2 className="font-semibold text-lg mb-4">{t.yourOrder}</h2>
                 <ul className="divide-y divide-gray-50">
                   {items.map(item => (
                     <CartItemRow key={item.id} item={item} />
@@ -145,26 +147,26 @@ export default function CheckoutPage() {
                   className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand-magenta transition-colors"
                 >
                   <Gift className="w-4 h-4" />
-                  {giftEnabled ? 'Remove gift option' : 'Send as a gift'}
+                  {giftEnabled ? t.removeGiftOption : t.sendAsGift}
                   <ChevronDown className={`w-4 h-4 transition-transform ${giftEnabled ? 'rotate-180' : ''}`} />
                 </button>
 
                 {giftEnabled && (
                   <div className="mt-4 space-y-3">
                     <Input
-                      label="Recipient Email"
+                      label={t.recipientEmail}
                       type="email"
                       placeholder="friend@example.com"
                       value={giftEmail}
                       onChange={e => setGiftEmail(e.target.value)}
                     />
                     <div className="space-y-1">
-                      <label className="text-sm font-medium text-gray-700">Gift Note (optional)</label>
+                      <label className="text-sm font-medium text-gray-700">{t.giftNote}</label>
                       <textarea
                         value={giftNote}
                         onChange={e => setGiftNote(e.target.value)}
                         rows={2}
-                        placeholder="Happy birthday! Enjoy this!"
+                        placeholder={t.giftNotePlaceholder}
                         className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 focus:border-brand-magenta resize-none"
                       />
                     </div>
@@ -174,9 +176,9 @@ export default function CheckoutPage() {
 
               {/* Tip selector */}
               <section className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h3 className="font-medium text-sm text-gray-700 mb-3">Leave a tip for creators</h3>
+                <h3 className="font-medium text-sm text-gray-700 mb-3">{t.tipCreators}</h3>
                 <div className="flex flex-wrap gap-2">
-                  {TIP_OPTIONS.map(opt => (
+                  {TIP_PERCENT_OPTIONS.map(opt => (
                     <button
                       key={opt.value}
                       type="button"
@@ -188,7 +190,7 @@ export default function CheckoutPage() {
                           : 'bg-white text-gray-700 border-gray-200 hover:border-brand-magenta',
                       ].join(' ')}
                     >
-                      {opt.label}
+                      {opt.value === 0 ? t.noTip : `${Math.round(opt.value * 100)}%`}
                     </button>
                   ))}
                   <button
@@ -201,7 +203,7 @@ export default function CheckoutPage() {
                         : 'bg-white text-gray-700 border-gray-200 hover:border-brand-magenta',
                     ].join(' ')}
                   >
-                    Custom
+                    {t.customTip}
                   </button>
                 </div>
                 {isCustomTip && (
@@ -222,25 +224,25 @@ export default function CheckoutPage() {
 
               {/* Contact info */}
               <section className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h2 className="font-semibold text-lg mb-4">Contact Information</h2>
+                <h2 className="font-semibold text-lg mb-4">{t.contactInformation}</h2>
                 <div className="space-y-4">
                   <Input
-                    label="Email"
+                    label={t.emailLabel}
                     type="email"
-                    placeholder="you@example.com"
+                    placeholder={t.emailPlaceholder}
                     error={errors.email?.message}
                     readOnly={isLoggedIn}
                     className={isLoggedIn ? 'bg-gray-50 text-gray-500 cursor-not-allowed' : ''}
                     {...register('email')}
                   />
                   <Input
-                    label="Full Name"
-                    placeholder="Jane Smith"
+                    label={t.fullNameLabel}
+                    placeholder={t.fullNamePlaceholder}
                     error={errors.name?.message}
                     {...register('name')}
                   />
                   <div className="space-y-1">
-                    <label className="block text-sm font-medium text-gray-700">Country</label>
+                    <label className="block text-sm font-medium text-gray-700">{t.countryLabel}</label>
                     <select
                       className="w-full h-10 px-3 rounded-lg border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 focus:border-brand-magenta"
                       {...register('country')}
@@ -255,9 +257,9 @@ export default function CheckoutPage() {
                   </div>
                   {vatRate > 0 && (
                     <Input
-                      label="VAT / Tax ID (optional)"
-                      placeholder="EU1234567890"
-                      hint="Provide to remove VAT"
+                      label={t.vatLabel}
+                      placeholder={t.vatPlaceholder}
+                      hint={t.vatHint}
                       {...register('vatId')}
                     />
                   )}
@@ -268,11 +270,11 @@ export default function CheckoutPage() {
             {/* Right column — Order summary */}
             <div className="lg:sticky lg:top-24 self-start space-y-4">
               <div className="bg-white rounded-2xl p-6 border border-gray-100">
-                <h2 className="font-semibold text-lg mb-4">Order Summary</h2>
+                <h2 className="font-semibold text-lg mb-4">{t.orderSummary}</h2>
                 <dl className="space-y-2 text-sm">
-                  <SummaryRow label="Subtotal" value={formatPrice(sub, items[0]?.currency ?? 'USD')} />
+                  <SummaryRow label={t.subtotalLabel} value={formatPrice(sub, items[0]?.currency ?? 'USD')} />
                   {tipAmount > 0 && (
-                    <SummaryRow label="Tip" value={`+ ${formatPrice(tipAmount, items[0]?.currency ?? 'USD')}`} />
+                    <SummaryRow label={t.tipLabel} value={`+ ${formatPrice(tipAmount, items[0]?.currency ?? 'USD')}`} />
                   )}
                   {vatRate > 0 && (
                     <SummaryRow
@@ -282,7 +284,7 @@ export default function CheckoutPage() {
                   )}
                   <div className="border-t border-gray-100 pt-2 mt-2">
                     <SummaryRow
-                      label="Total"
+                      label={t.totalLabel}
                       value={formatPrice(total, items[0]?.currency ?? 'USD')}
                       bold
                     />
@@ -297,11 +299,11 @@ export default function CheckoutPage() {
                 className="w-full"
                 loading={loading}
               >
-                Pay {formatPrice(total, items[0]?.currency ?? 'USD')}
+                {t.payButton(formatPrice(total, items[0]?.currency ?? 'USD'))}
               </Button>
 
               <p className="text-center text-xs text-gray-400">
-                Powered by Stripe. Your info is encrypted and secure.
+                {t.stripeDisclaimer}
               </p>
             </div>
           </div>
@@ -313,6 +315,7 @@ export default function CheckoutPage() {
 
 function CartItemRow({ item }: { item: import('@/types/database').CartItem }) {
   const { removeItem } = useCart()
+  const t = getTranslations(item.pageLanguage)
   return (
     <li className="flex items-center gap-3 py-3">
       {item.bannerUrl && (
@@ -322,7 +325,7 @@ function CartItemRow({ item }: { item: import('@/types/database').CartItem }) {
       )}
       <div className="flex-1 min-w-0">
         <div className="font-medium text-sm text-gray-900 truncate">{item.title}</div>
-        <div className="text-xs text-gray-500">by {item.sellerName}</div>
+        <div className="text-xs text-gray-500">{t.cartItemBy} {item.sellerName}</div>
       </div>
       <div className="flex items-center gap-2">
         <span className="font-semibold text-sm">{formatPrice(item.price, item.currency)}</span>

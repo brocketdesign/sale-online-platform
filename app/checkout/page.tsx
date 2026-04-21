@@ -79,7 +79,7 @@ export default function CheckoutPage() {
 
   async function onSubmit(values: ContactForm) {
     if (items.length === 0) {
-      toast.error('Your cart is empty')
+      toast.error(t.emptyCartTitle)
       return
     }
     setLoading(true)
@@ -278,7 +278,7 @@ export default function CheckoutPage() {
                   )}
                   {vatRate > 0 && (
                     <SummaryRow
-                      label={`VAT (${Math.round(vatRate * 100)}%)`}
+                      label={t.vatSummary(Math.round(vatRate * 100))}
                       value={`+ ${formatPrice(vatAmount, items[0]?.currency ?? 'USD')}`}
                     />
                   )}

@@ -57,6 +57,7 @@ export default async function ProductsListPage() {
                 <tr>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600">Product</th>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600">Price</th>
+                  <th className="text-left px-6 py-4 font-semibold text-gray-600">Language</th>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600">Sales</th>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600">Status</th>
                   <th className="text-right px-6 py-4 font-semibold text-gray-600">Actions</th>
@@ -69,7 +70,8 @@ export default async function ProductsListPage() {
                       <div className="font-semibold text-brand-black">{product.title}</div>
                       <div className="text-xs text-gray-400 mt-0.5">{product.product_format.toUpperCase()}</div>
                     </td>
-                    <td className="px-6 py-4 text-gray-700 font-medium">{formatPrice(product.price)}</td>
+                    <td className="px-6 py-4 text-gray-700 font-medium">{formatPrice(product.price, product.currency)}</td>
+                    <td className="px-6 py-4 text-gray-500 text-xs font-medium uppercase">{product.page_language || '—'}</td>
                     <td className="px-6 py-4 text-gray-700">{product.sales_count}</td>
                     <td className="px-6 py-4">
                       <PublishToggle productId={product.id} status={product.status} />

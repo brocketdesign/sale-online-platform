@@ -19,6 +19,10 @@ export const STRIPE_LOCALE_MAP: Record<PageLanguage, string> = {
 export interface PageTranslations {
   // Product page — sticky bar / sidebar
   addToCart: string
+  addToWishlist: string
+  wishlistSaved: string
+  saveToWishlist: string
+  removeFromWishlist: string
   buyUnlock: string
   ratings: string
   rating: string
@@ -57,6 +61,7 @@ export interface PageTranslations {
   orderSummary: string
   subtotalLabel: string
   tipLabel: string
+  vatSummary: (percent: number) => string
   totalLabel: string
   payButton: (amount: string) => string
   stripeDisclaimer: string
@@ -81,6 +86,10 @@ export interface PageTranslations {
 
 const en: PageTranslations = {
   addToCart: 'Add to cart',
+  addToWishlist: 'Add to wishlist',
+  wishlistSaved: 'Saved',
+  saveToWishlist: 'Save to wishlist',
+  removeFromWishlist: 'Remove from wishlist',
   buyUnlock: 'Buy to unlock',
   ratings: 'Ratings',
   rating: 'rating',
@@ -116,6 +125,7 @@ const en: PageTranslations = {
   orderSummary: 'Order Summary',
   subtotalLabel: 'Subtotal',
   tipLabel: 'Tip',
+  vatSummary: (percent) => `VAT (${percent}%)`,
   totalLabel: 'Total',
   payButton: (amount) => `Pay ${amount}`,
   stripeDisclaimer: 'Powered by Stripe. Your info is encrypted and secure.',
@@ -138,6 +148,10 @@ const en: PageTranslations = {
 
 const fr: PageTranslations = {
   addToCart: 'Ajouter au panier',
+  addToWishlist: 'Ajouter à la liste de souhaits',
+  wishlistSaved: 'Sauvegardé',
+  saveToWishlist: 'Enregistrer dans la liste de souhaits',
+  removeFromWishlist: 'Retirer de la liste de souhaits',
   buyUnlock: 'Acheter pour déverrouiller',
   ratings: 'Évaluations',
   rating: 'évaluation',
@@ -173,6 +187,7 @@ const fr: PageTranslations = {
   orderSummary: 'Récapitulatif de commande',
   subtotalLabel: 'Sous-total',
   tipLabel: 'Pourboire',
+  vatSummary: (percent) => `TVA (${percent}%)`,
   totalLabel: 'Total',
   payButton: (amount) => `Payer ${amount}`,
   stripeDisclaimer: 'Propulsé par Stripe. Vos informations sont chiffrées et sécurisées.',
@@ -195,6 +210,10 @@ const fr: PageTranslations = {
 
 const es: PageTranslations = {
   addToCart: 'Añadir al carrito',
+  addToWishlist: 'Añadir a la lista de deseos',
+  wishlistSaved: 'Guardado',
+  saveToWishlist: 'Guardar en la lista de deseos',
+  removeFromWishlist: 'Eliminar de la lista de deseos',
   buyUnlock: 'Compra para desbloquear',
   ratings: 'Valoraciones',
   rating: 'valoración',
@@ -230,6 +249,7 @@ const es: PageTranslations = {
   orderSummary: 'Resumen del pedido',
   subtotalLabel: 'Subtotal',
   tipLabel: 'Propina',
+  vatSummary: (percent) => `IVA (${percent}%)`,
   totalLabel: 'Total',
   payButton: (amount) => `Pagar ${amount}`,
   stripeDisclaimer: 'Desarrollado por Stripe. Tu información está cifrada y segura.',

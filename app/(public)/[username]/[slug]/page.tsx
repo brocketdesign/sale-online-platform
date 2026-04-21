@@ -95,7 +95,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
           <div className="flex items-center gap-4">
             <span className="font-black text-lg text-brand-black">{formatPrice(product.price, product.currency)}</span>
-            <AddToCartButton product={product} seller={profile} size="sm" />
+            <AddToCartButton product={product} seller={profile} size="sm" lang={product.page_language} />
           </div>
         </div>
       </div>
@@ -139,7 +139,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           {/* Price + CTA */}
           <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
             <span className="text-base font-black text-brand-black leading-none">{formatPrice(product.price, product.currency)}</span>
-            <AddToCartButton product={product} seller={profile} size="sm" />
+            <AddToCartButton product={product} seller={profile} size="sm" lang={product.page_language} />
           </div>
         </div>
       </div>
@@ -265,7 +265,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
                 <p className="text-sm text-gray-600 mb-5 leading-relaxed">{product.conversion_message}</p>
               )}
 
-              <AddToCartButton product={product} seller={profile} />
+              <AddToCartButton product={product} seller={profile} lang={product.page_language} />
 
               {/* Sales count */}
               {product.show_sales_count && product.sales_count > 0 && (
@@ -276,7 +276,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
               {/* Wishlist + Share */}
               <div className="mt-3 flex gap-2">
-                <WishlistButton productId={product.id} productTitle={product.title} />
+                <WishlistButton productId={product.id} productTitle={product.title} lang={product.page_language} />
                 <ShareButton title={product.title} />
               </div>
 

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react'
 import { ChevronDown, Heart, HeartOff } from 'lucide-react'
+import { getTranslations } from '@/lib/i18n'
 
 const STORAGE_KEY = 'sellify_wishlist'
 
@@ -21,12 +22,14 @@ function setWishlist(ids: string[]) {
 interface Props {
   productId: string
   productTitle: string
+  lang?: string
 }
 
-export default function WishlistButton({ productId, productTitle }: Props) {
+export default function WishlistButton({ productId, productTitle, lang }: Props) {
   const [saved, setSaved] = useState(false)
   const [open, setOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  const t = getTranslations(lang)
 
   useEffect(() => {
     setSaved(getWishlist().includes(productId))
@@ -72,7 +75,7 @@ export default function WishlistButton({ productId, productTitle }: Props) {
           ) : (
             <Heart className="w-4 h-4 text-gray-400" />
           )}
-          {saved ? 'Saved' : 'Add to wishlist'}
+          {saved ? t.wishlistSaved : t.addToWishlist}
         </span>
         <ChevronDown className={`w-4 h-4 text-gray-400 transition-transform ${open ? 'rotate-180' : ''}`} />
       </button>
@@ -86,7 +89,7 @@ export default function WishlistButton({ productId, productTitle }: Props) {
               className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <Heart className="w-4 h-4 text-[#FF007A]" />
-              Save to wishlist
+              {t.saveToWishlist}
             </button>
           ) : (
             <button
@@ -95,7 +98,7 @@ export default function WishlistButton({ productId, productTitle }: Props) {
               className="w-full flex items-center gap-2.5 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
             >
               <HeartOff className="w-4 h-4 text-gray-400" />
-              Remove from wishlist
+              {t.removeFromWishlist}
             </button>
           )}
         </div>

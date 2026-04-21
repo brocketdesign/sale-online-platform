@@ -5,16 +5,19 @@ import Button from '@/components/ui/Button'
 import { ShoppingCart } from 'lucide-react'
 import { useRouter } from 'next/navigation'
 import type { Product, Profile } from '@/types/database'
+import { getTranslations } from '@/lib/i18n'
 
 interface Props {
   product: Product
   seller: Profile
   size?: 'sm' | 'md' | 'lg'
+  lang?: string
 }
 
-export default function AddToCartButton({ product, seller, size = 'lg' }: Props) {
+export default function AddToCartButton({ product, seller, size = 'lg', lang }: Props) {
   const { addItem } = useCart()
   const router = useRouter()
+  const t = getTranslations(lang)
 
   function handleClick() {
     addItem({
@@ -40,7 +43,7 @@ export default function AddToCartButton({ product, seller, size = 'lg' }: Props)
       variant="primary"
     >
       <ShoppingCart className="w-4 h-4" />
-      Add to cart
+      {t.addToCart}
     </Button>
   )
 }

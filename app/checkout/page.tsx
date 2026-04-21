@@ -35,7 +35,8 @@ const TIP_PERCENT_OPTIONS = [
 export default function CheckoutPage() {
   const router = useRouter()
   const { items, clearCart, subtotal } = useCart()
-  const t = getTranslations(items[0]?.pageLanguage)
+  const [lang, setLang] = useState<string | undefined>(items[0]?.pageLanguage)
+  const t = getTranslations(lang)
   const [tipPercent, setTipPercent] = useState(0)
   const [customTip, setCustomTip] = useState('')
   const [isCustomTip, setIsCustomTip] = useState(false)
@@ -44,6 +45,23 @@ export default function CheckoutPage() {
   const [giftNote, setGiftNote] = useState('')
   const [loading, setLoading] = useState(false)
   const [isLoggedIn, setIsLoggedIn] = useState(false)
+
+  // Fetch fresh page_language from DB so stale localStorage cart data is corrected
+  const firstProductId = items[0]?.productId
+  useEffect(() => {
+    if (!firstProductId) return
+    setLang(items[0]?.pageLanguage)
+    const supabase = createClient()
+    supabase
+      .from('products')
+      .select('page_language')
+      .eq('id', firstProductId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data?.page_language) setLang(data.page_language)
+      })
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [firstProductId])
 
   const {
     register,
@@ -134,7 +152,7 @@ export default function CheckoutPage() {
                 <h2 className="font-semibold text-lg mb-4">{t.yourOrder}</h2>
                 <ul className="divide-y divide-gray-50">
                   {items.map(item => (
-                    <CartItemRow key={item.id} item={item} />
+                    <CartItemRow key={item.id} item={item} lang={lang} />
                   ))}
                 </ul>
               </section>
@@ -313,9 +331,9 @@ export default function CheckoutPage() {
   )
 }
 
-function CartItemRow({ item }: { item: import('@/types/database').CartItem }) {
+function CartItemRow({ item, lang }: { item: import('@/types/database').CartItem; lang?: string }) {
   const { removeItem } = useCart()
-  const t = getTranslations(item.pageLanguage)
+  const t = getTranslations(lang ?? item.pageLanguage)
   return (
     <li className="flex items-center gap-3 py-3">
       {item.bannerUrl && (

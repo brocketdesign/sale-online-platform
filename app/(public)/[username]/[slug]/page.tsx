@@ -94,7 +94,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             {reviews.length > 0 && <StarRating rating={avg} count={reviews.length} size="sm" />}
           </div>
           <div className="flex items-center gap-4">
-            <span className="font-black text-lg text-brand-black">{formatPrice(product.price)}</span>
+            <span className="font-black text-lg text-brand-black">{formatPrice(product.price, product.currency)}</span>
             <AddToCartButton product={product} seller={profile} size="sm" />
           </div>
         </div>
@@ -138,7 +138,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
           </div>
           {/* Price + CTA */}
           <div className="flex-shrink-0 flex flex-col items-end gap-1.5">
-            <span className="text-base font-black text-brand-black leading-none">{formatPrice(product.price)}</span>
+            <span className="text-base font-black text-brand-black leading-none">{formatPrice(product.price, product.currency)}</span>
             <AddToCartButton product={product} seller={profile} size="sm" />
           </div>
         </div>
@@ -257,7 +257,7 @@ export default async function ProductDetailPage({ params }: PageProps) {
             <div className="bg-white border-2 border-gray-100 rounded-2xl p-6 shadow-sm">
               {/* Price */}
               <div className="flex items-baseline gap-2 mb-2">
-                <span className="text-4xl font-black text-brand-black">{formatPrice(product.price)}</span>
+                <span className="text-4xl font-black text-brand-black">{formatPrice(product.price, product.currency)}</span>
               </div>
 
               {/* Conversion message */}

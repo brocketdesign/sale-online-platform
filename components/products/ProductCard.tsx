@@ -16,7 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={href} className="group block">
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-1 active:scale-[0.98] active:shadow-none transition-all duration-150 cursor-pointer">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl hover:shadow-gray-200/70 hover:-translate-y-2 active:scale-[0.98] active:shadow-none transition-all duration-300 ease-out cursor-pointer">
         {/* Thumbnail */}
         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
           {product.banner_url ? (
@@ -24,7 +24,7 @@ export default function ProductCard({ product }: ProductCardProps) {
               src={product.banner_url}
               alt={product.title}
               fill
-              className="object-cover group-hover:scale-105 transition-transform duration-300"
+              className="object-cover group-hover:scale-110 transition-transform duration-500 ease-out"
               sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
             />
           ) : (
@@ -44,7 +44,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
         {/* Info */}
         <div className="p-4">
-          <h3 className="font-bold text-brand-black text-sm leading-tight mb-1 line-clamp-2 group-hover:text-[#FF007A] transition-colors">
+          <h3 className="font-bold text-brand-black text-sm leading-tight mb-1 line-clamp-2 group-hover:text-[#FF007A] transition-colors duration-300">
             {product.title}
           </h3>
           <p className="text-xs text-gray-500 mb-3">{product.profiles.display_name || product.profiles.username}</p>

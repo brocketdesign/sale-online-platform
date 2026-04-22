@@ -30,9 +30,9 @@ export default function CategorySection() {
             <Link
               key={cat.label}
               href={`/discover?format=${cat.format}`}
-              className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border border-gray-100 hover:shadow-md hover:-translate-y-1 transition-all group cursor-pointer"
+              className="flex flex-col items-center gap-3 p-6 bg-white rounded-2xl border border-gray-100 hover:shadow-xl hover:shadow-gray-200/60 hover:-translate-y-2 transition-all duration-300 ease-out group cursor-pointer active:scale-[0.97] active:translate-y-0 active:shadow-none active:duration-100"
             >
-              <div className={`w-12 h-12 rounded-xl ${cat.color} flex items-center justify-center group-hover:scale-110 transition-transform`}>
+              <div className={`w-12 h-12 rounded-xl ${cat.color} flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform duration-300 ease-out`}>
                 <cat.icon className="w-6 h-6" />
               </div>
               <span className="text-sm font-semibold text-gray-700 text-center">{cat.label}</span>
@@ -43,7 +43,7 @@ export default function CategorySection() {
         <div className="text-center mt-10">
           <Link
             href="/discover"
-            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-black text-white font-semibold rounded-xl hover:bg-gray-800 transition-colors"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-brand-black text-white font-semibold rounded-xl hover:bg-gray-800 hover:-translate-y-0.5 hover:shadow-md transition-all duration-300 ease-out active:translate-y-0 active:shadow-none active:scale-[0.97] active:duration-100"
           >
             Browse all products →
           </Link>

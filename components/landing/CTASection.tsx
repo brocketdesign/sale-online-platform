@@ -21,14 +21,14 @@ export default function CTASection() {
         <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
             href="/register"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF007A] text-white text-lg font-bold rounded-xl hover:bg-[#e0006e] transition-all shadow-lg hover:shadow-xl hover:-translate-y-0.5"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-[#FF007A] text-white text-lg font-bold rounded-xl hover:bg-[#e0006e] transition-all duration-300 ease-out shadow-lg hover:shadow-xl hover:-translate-y-1 active:translate-y-0 active:shadow-md active:scale-[0.97] active:duration-100"
           >
             Create your free account
             <ArrowRight className="w-5 h-5" />
           </Link>
           <Link
             href="/discover"
-            className="inline-flex items-center gap-2 px-8 py-4 bg-transparent text-white text-lg font-semibold rounded-xl border-2 border-white/30 hover:border-white/60 hover:bg-white/5 transition-all"
+            className="inline-flex items-center gap-2 px-8 py-4 bg-transparent text-white text-lg font-semibold rounded-xl border-2 border-white/30 hover:border-white/60 hover:bg-white/5 hover:-translate-y-1 transition-all duration-300 ease-out active:translate-y-0 active:scale-[0.97] active:duration-100"
           >
             Browse products
           </Link>

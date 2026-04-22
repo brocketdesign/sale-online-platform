@@ -73,11 +73,14 @@ body {
 button:not([disabled]),
 a,
 [role="button"]:not([disabled]) {
-  transition: transform 0.1s ease, opacity 0.15s ease;
+  transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              box-shadow 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+              opacity 0.2s ease-out;
 }
 button:not([disabled]):active,
 [role="button"]:not([disabled]):active {
   transform: scale(0.96);
+  transition-duration: 0.1s;
 }
 /* Don't double-scale elements that already handle it (e.g. cards) */
 .group:active { transform: none; }

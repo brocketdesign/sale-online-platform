@@ -11,11 +11,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-[#FF007A] text-white hover:bg-[#e0006e] active:bg-[#c4005f] shadow-sm active:shadow-inner',
-  secondary: 'bg-brand-black text-white hover:bg-gray-800 active:bg-gray-900 shadow-sm active:shadow-inner',
-  outline: 'border-2 border-brand-black text-brand-black hover:bg-brand-black hover:text-white active:bg-gray-900 active:text-white',
+  primary: 'bg-[#FF007A] text-white hover:bg-[#e0006e] hover:-translate-y-px hover:shadow-md active:bg-[#c4005f] active:translate-y-0 active:shadow-inner shadow-sm',
+  secondary: 'bg-brand-black text-white hover:bg-gray-800 hover:-translate-y-px hover:shadow-md active:bg-gray-900 active:translate-y-0 active:shadow-inner shadow-sm',
+  outline: 'border-2 border-brand-black text-brand-black hover:bg-brand-black hover:text-white hover:-translate-y-px active:bg-gray-900 active:text-white active:translate-y-0',
   ghost: 'text-brand-black hover:bg-gray-100 active:bg-gray-200',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm active:shadow-inner',
+  danger: 'bg-red-600 text-white hover:bg-red-700 hover:-translate-y-px hover:shadow-md active:bg-red-800 active:translate-y-0 active:shadow-inner shadow-sm',
 }
 
 const sizes: Record<Size, string> = {
@@ -39,7 +39,7 @@ export default function Button({
       {...props}
       disabled={disabled || loading}
       className={[
-        'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 cursor-pointer select-none active:scale-[0.96]',
+        'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-300 ease-out cursor-pointer select-none active:scale-[0.96] active:duration-100',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007A] focus-visible:ring-offset-2',
         variants[variant],

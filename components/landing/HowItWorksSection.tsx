@@ -43,7 +43,7 @@ export default function HowItWorksSection() {
 
           {steps.map((step) => (
             <div key={step.number} className="relative text-center group">
-              <div className={`w-16 h-16 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-6 text-2xl transition-transform group-hover:scale-110`}>
+              <div className={`w-16 h-16 rounded-2xl ${step.color} flex items-center justify-center mx-auto mb-6 text-2xl transition-transform duration-300 ease-out group-hover:scale-110 group-hover:-rotate-3`}>
                 <step.icon className="w-7 h-7" />
               </div>
               <div className="text-xs font-black tracking-widest text-gray-300 mb-2">{step.number}</div>

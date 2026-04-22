@@ -41,15 +41,20 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   if (!profile) notFound()
 
+  const { data: { user } } = await supabase.auth.getUser()
+  const isOwner = user?.id === profile.id
+
   const { data: productRaw } = await supabase
     .from('products')
     .select(`*, profiles (*)`)
     .eq('seller_id', profile.id)
     .eq('slug', slug)
-    .eq('status', 'published')
     .maybeSingle()
 
   if (!productRaw) notFound()
+  if (productRaw.status !== 'published' && !isOwner) notFound()
+
+  const isDraft = productRaw.status !== 'published'
 
   const product = productRaw as any
   const t = getTranslations(product.page_language)
@@ -86,6 +91,16 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-white">
+      {/* Draft preview banner */}
+      {isDraft && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-yellow-400 text-yellow-900 font-semibold text-sm px-5 py-3 rounded-full shadow-lg border border-yellow-500 pointer-events-none">
+          <svg xmlns="http://www.w3.org/2000/svg" className="w-4 h-4 shrink-0" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+          </svg>
+          Draft preview — only visible to you
+        </div>
+      )}
+
       {/* Sticky top bar (shown by CSS on scroll via JS below) */}
       <div id="sticky-bar" className="hidden lg:flex fixed top-0 left-0 right-0 z-40 bg-white border-b border-gray-200 shadow-sm transition-all">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 w-full flex items-center justify-between py-3">

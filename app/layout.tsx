@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import { Toaster } from 'sonner'
 import { CartProvider } from '@/hooks/useCart'
 import Navbar from '@/components/layout/Navbar'
+import NavigationProgress from '@/components/layout/NavigationProgress'
+import ClickRipple from '@/components/layout/ClickRipple'
 import './globals.css'
 
 export const metadata: Metadata = {
@@ -25,9 +27,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="min-h-screen bg-white text-brand-black antialiased">
+        <NavigationProgress />
+        <ClickRipple />
         <CartProvider>
           <Navbar />
-          <main>{children}</main>
+          <main className="animate-fade-in">{children}</main>
           <Toaster position="bottom-right" richColors closeButton />
         </CartProvider>
       </body>

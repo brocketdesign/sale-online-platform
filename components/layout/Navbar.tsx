@@ -68,8 +68,8 @@ export default function Navbar() {
                 href={href}
                 className={
                   isActive(href)
-                    ? 'px-3.5 py-1.5 rounded-full bg-brand-black text-white font-semibold transition-colors'
-                    : 'px-3.5 py-1.5 rounded-full text-gray-600 hover:text-brand-black hover:bg-gray-100 transition-colors'
+                    ? 'px-3.5 py-1.5 rounded-full bg-brand-black text-white font-semibold transition-all active:scale-[0.95]'
+                    : 'px-3.5 py-1.5 rounded-full text-gray-600 hover:text-brand-black hover:bg-gray-100 transition-all active:scale-[0.95]'
                 }
               >
                 {label}
@@ -80,7 +80,7 @@ export default function Navbar() {
           {/* Right side */}
           <div className="flex items-center gap-2 ml-auto lg:ml-0">
             {/* Cart */}
-            <Link href="/checkout" className="relative p-2 hover:bg-gray-50 rounded-lg transition-colors">
+            <Link href="/checkout" className="relative p-2 hover:bg-gray-50 rounded-lg transition-all active:scale-[0.90]">
               <ShoppingCart className="w-5 h-5 text-gray-600" />
               {items.length > 0 && (
                 <span className="absolute -top-1 -right-1 w-5 h-5 bg-[#FF007A] text-white text-xs font-bold rounded-full flex items-center justify-center">
@@ -93,16 +93,16 @@ export default function Navbar() {
             <div className="hidden lg:block w-px h-5 bg-gray-200 mx-1" />
 
             {user ? (
-              <Link href="/dashboard/profile" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-colors border border-gray-200">
+              <Link href="/dashboard/profile" className="hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-gray-50 rounded-lg transition-all active:scale-[0.95] border border-gray-200">
                 <User className="w-4 h-4" />
                 Account
               </Link>
             ) : (
               <div className="hidden lg:flex items-center gap-2">
-                <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors">
+                <Link href="/login" className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-all active:scale-[0.95]">
                   Log in
                 </Link>
-                <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-brand-black rounded-lg hover:bg-gray-800 transition-colors">
+                <Link href="/register" className="px-4 py-2 text-sm font-semibold text-white bg-brand-black rounded-lg hover:bg-gray-800 transition-all active:scale-[0.95] active:bg-gray-900">
                   Start selling
                 </Link>
               </div>

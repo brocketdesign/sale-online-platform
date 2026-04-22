@@ -41,7 +41,7 @@ export default function SubscribeButton({ sellerId, sellerName }: { sellerId: st
     return (
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center gap-2 px-4 py-2 border-2 border-brand-black text-brand-black text-sm font-semibold rounded-lg hover:bg-brand-black hover:text-white transition-all"
+        className="inline-flex items-center gap-2 px-4 py-2 border-2 border-brand-black text-brand-black text-sm font-semibold rounded-lg hover:bg-brand-black hover:text-white transition-all active:scale-[0.96]"
       >
         <Bell className="w-4 h-4" />
         Subscribe

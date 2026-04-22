@@ -11,11 +11,11 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 }
 
 const variants: Record<Variant, string> = {
-  primary: 'bg-[#FF007A] text-white hover:bg-[#e0006e] active:bg-[#c4005f] shadow-sm',
-  secondary: 'bg-brand-black text-white hover:bg-gray-800 active:bg-gray-900 shadow-sm',
-  outline: 'border-2 border-brand-black text-brand-black hover:bg-brand-black hover:text-white',
+  primary: 'bg-[#FF007A] text-white hover:bg-[#e0006e] active:bg-[#c4005f] shadow-sm active:shadow-inner',
+  secondary: 'bg-brand-black text-white hover:bg-gray-800 active:bg-gray-900 shadow-sm active:shadow-inner',
+  outline: 'border-2 border-brand-black text-brand-black hover:bg-brand-black hover:text-white active:bg-gray-900 active:text-white',
   ghost: 'text-brand-black hover:bg-gray-100 active:bg-gray-200',
-  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm',
+  danger: 'bg-red-600 text-white hover:bg-red-700 active:bg-red-800 shadow-sm active:shadow-inner',
 }
 
 const sizes: Record<Size, string> = {
@@ -39,7 +39,7 @@ export default function Button({
       {...props}
       disabled={disabled || loading}
       className={[
-        'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 cursor-pointer select-none',
+        'inline-flex items-center justify-center gap-2 font-semibold transition-all duration-150 cursor-pointer select-none active:scale-[0.96]',
         'disabled:opacity-50 disabled:cursor-not-allowed',
         'focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FF007A] focus-visible:ring-offset-2',
         variants[variant],

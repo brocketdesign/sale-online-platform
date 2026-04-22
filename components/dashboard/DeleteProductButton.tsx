@@ -30,7 +30,7 @@ export default function DeleteProductButton({ productId }: { productId: string }
     <button
       onClick={handleDelete}
       className={[
-        'p-2 rounded-lg transition-colors text-xs',
+        'p-2 rounded-lg transition-all text-xs active:scale-[0.93]',
         confirming
           ? 'bg-red-500 text-white px-3'
           : 'text-gray-400 hover:text-red-600 hover:bg-red-50',

@@ -66,3 +66,56 @@ body {
 /* Prose overrides for product description */
 .prose a { color: var(--brand-magenta); }
 .prose a:hover { text-decoration: underline; }
+
+/* ── Click & navigation feedback ───────────────────────────── */
+
+/* Press-down scale for all interactive elements */
+button:not([disabled]),
+a,
+[role="button"]:not([disabled]) {
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+button:not([disabled]):active,
+[role="button"]:not([disabled]):active {
+  transform: scale(0.96);
+}
+/* Don't double-scale elements that already handle it (e.g. cards) */
+.group:active { transform: none; }
+
+/* Ripple keyframe – injected by ClickRipple component */
+@keyframes ripple-expand {
+  from {
+    transform: scale(0);
+    opacity: 0.45;
+  }
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+.ripple-wave {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  transform: scale(0);
+  animation: ripple-expand 0.55s ease-out forwards;
+}
+
+/* Navigation progress bar */
+@keyframes progress-indeterminate {
+  0%   { left: -35%; right: 100%; }
+  60%  { left: 100%; right: -90%; }
+  100% { left: 100%; right: -90%; }
+}
+.nav-progress-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2.5px;
+  z-index: 9999;
+  background: #FF007A;
+  box-shadow: 0 0 8px #FF007A, 0 0 4px #FF007A;
+  transition: width 0.2s ease-out, opacity 0.3s ease;
+  transform-origin: left;
+}

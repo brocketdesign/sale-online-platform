@@ -16,7 +16,7 @@ export default function ProductCard({ product }: ProductCardProps) {
 
   return (
     <Link href={href} className="group block">
-      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-1 transition-all cursor-pointer">
+      <div className="bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-md hover:-translate-y-1 active:scale-[0.98] active:shadow-none transition-all duration-150 cursor-pointer">
         {/* Thumbnail */}
         <div className="relative aspect-[4/3] bg-gray-100 overflow-hidden">
           {product.banner_url ? (

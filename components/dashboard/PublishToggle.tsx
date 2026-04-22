@@ -27,7 +27,7 @@ export default function PublishToggle({ productId, status }: { productId: string
       onClick={toggle}
       disabled={loading}
       className={[
-        'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full transition-colors',
+        'inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full transition-all active:scale-[0.93]',
         current === 'published'
           ? 'bg-green-100 text-green-700 hover:bg-green-200'
           : 'bg-gray-100 text-gray-600 hover:bg-gray-200',

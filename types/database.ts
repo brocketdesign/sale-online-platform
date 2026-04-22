@@ -50,6 +50,7 @@ export interface Database {
           is_admin: boolean
           credits: number
           total_swaps: number
+          affiliate_balance: number
           created_at: string
           updated_at: string
         }
@@ -91,6 +92,8 @@ export interface Database {
           preview_page_count: number
           preview_blur: boolean
           page_language: string
+          affiliate_enabled: boolean
+          affiliate_commission_rate: number
           created_at: string
           updated_at: string
         }
@@ -112,6 +115,8 @@ export interface Database {
           preview_page_count?: number
           preview_blur?: boolean
           page_language?: string
+          affiliate_enabled?: boolean
+          affiliate_commission_rate?: number
         }
         Update: Partial<Database['public']['Tables']['products']['Insert']>
         Relationships: []
@@ -303,11 +308,61 @@ export interface Database {
         Update: Partial<Database['public']['Tables']['chat_testimonials']['Insert']>
         Relationships: []
       }
+      affiliate_links: {
+        Row: {
+          id: string
+          product_id: string
+          affiliate_id: string
+          code: string
+          clicks: number
+          created_at: string
+        }
+        Insert: {
+          product_id: string
+          affiliate_id: string
+          code: string
+          clicks?: number
+        }
+        Update: Partial<Database['public']['Tables']['affiliate_links']['Insert']>
+        Relationships: []
+      }
+      affiliate_commissions: {
+        Row: {
+          id: string
+          affiliate_link_id: string | null
+          affiliate_id: string
+          product_id: string | null
+          order_id: string | null
+          commission_amount: number
+          currency: string
+          status: 'pending' | 'paid' | 'cancelled'
+          created_at: string
+        }
+        Insert: {
+          affiliate_link_id?: string | null
+          affiliate_id: string
+          product_id?: string | null
+          order_id?: string | null
+          commission_amount: number
+          currency?: string
+          status?: 'pending' | 'paid' | 'cancelled'
+        }
+        Update: Partial<Database['public']['Tables']['affiliate_commissions']['Insert']>
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
       increment_sales_count: {
         Args: { product_id: string }
+        Returns: undefined
+      }
+      increment_affiliate_clicks: {
+        Args: { link_code: string }
+        Returns: undefined
+      }
+      increment_affiliate_balance: {
+        Args: { user_id: string; amount: number }
         Returns: undefined
       }
     }
@@ -325,6 +380,9 @@ export type OrderItem = Database['public']['Tables']['order_items']['Row']
 export type Purchase = Database['public']['Tables']['purchases']['Row']
 export type ProductPreviewImage = Database['public']['Tables']['product_preview_images']['Row']
 
+export type AffiliateLink = Database['public']['Tables']['affiliate_links']['Row']
+export type AffiliateCommission = Database['public']['Tables']['affiliate_commissions']['Row']
+
 export type ProductWithSeller = Product & { profiles: Profile }
 export type ProductWithFiles = Product & { product_files: ProductFile[] }
 
@@ -339,4 +397,5 @@ export interface CartItem {
   sellerUsername: string
   slug: string
   pageLanguage?: string
+  affiliateCode?: string
 }

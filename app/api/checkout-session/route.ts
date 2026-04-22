@@ -100,6 +100,7 @@ export async function POST(request: Request) {
             productId: i.productId,
             price: i.price,
             currency: i.currency,
+            affiliateCode: i.affiliateCode ?? '',
           }))
         ),
         tip_amount: String(tip),

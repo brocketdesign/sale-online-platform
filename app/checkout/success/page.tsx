@@ -50,7 +50,7 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
   const giftRecipientEmail = meta.gift_recipient_email ?? ''
   const t = getTranslations(meta.page_language)
   const giftNote = meta.gift_note ?? ''
-  const cartItems: Array<{ productId: string; price: number; currency: string }> = JSON.parse(
+  const cartItems: Array<{ productId: string; price: number; currency: string; affiliateCode?: string }> = JSON.parse(
     meta.cart_items ?? '[]'
   )
 
@@ -244,6 +244,59 @@ export default async function CheckoutSuccessPage({ searchParams }: Props) {
             await supabase.rpc('increment_sales_count', { product_id: item.productId })
           } catch {
             // non-critical, silently skip
+          }
+        }
+
+        // Process affiliate commissions
+        for (const item of missingItems) {
+          try {
+            const code = item.affiliateCode
+            if (!code || !orderId) continue
+
+            // Look up affiliate link
+            const { data: link } = await supabase
+              .from('affiliate_links')
+              .select('id, affiliate_id, product_id')
+              .eq('code', code)
+              .maybeSingle()
+
+            if (!link) continue
+
+            // Fetch product to get commission rate
+            const { data: prod } = await supabase
+              .from('products')
+              .select('affiliate_enabled, affiliate_commission_rate, seller_id')
+              .eq('id', item.productId)
+              .maybeSingle()
+
+            if (!prod?.affiliate_enabled || !prod.affiliate_commission_rate) continue
+            // Prevent self-affiliation
+            if (link.affiliate_id === prod.seller_id) continue
+
+            const commissionAmount = Math.round(item.price * prod.affiliate_commission_rate / 100)
+
+            // Insert commission record
+            const { error: commError } = await supabase
+              .from('affiliate_commissions')
+              .insert({
+                affiliate_link_id: link.id,
+                affiliate_id: link.affiliate_id,
+                product_id: item.productId,
+                order_id: orderId,
+                commission_amount: commissionAmount,
+                currency: item.currency.toLowerCase(),
+                status: 'pending',
+              })
+
+            if (!commError) {
+              // Credit affiliate balance
+              await supabase.rpc('increment_affiliate_balance', {
+                user_id: link.affiliate_id,
+                amount: commissionAmount,
+              })
+            }
+          } catch (affErr) {
+            console.error('[success] affiliate commission error', affErr)
           }
         }
       }

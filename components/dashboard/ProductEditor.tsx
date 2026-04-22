@@ -66,6 +66,8 @@ const schema = z.object({
   preview_page_count: z.number().int().min(1).max(10),
   preview_blur: z.boolean(),
   page_language: z.enum(['en', 'fr', 'es', 'ja'] as const),
+  affiliate_enabled: z.boolean(),
+  affiliate_commission_rate: z.number().int().min(1).max(70),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -284,6 +286,8 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
       preview_page_count: (product as any)?.preview_page_count ?? 3,
       preview_blur: (product as any)?.preview_blur ?? false,
       page_language: ((product as any)?.page_language ?? 'en') as PageLanguage,
+      affiliate_enabled: (product as any)?.affiliate_enabled ?? false,
+      affiliate_commission_rate: (product as any)?.affiliate_commission_rate ?? 20,
     },
   })
 
@@ -361,6 +365,8 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
           preview_page_count: values.preview_page_count,
           preview_blur: values.preview_blur,
           page_language: values.page_language,
+          affiliate_enabled: values.affiliate_enabled,
+          affiliate_commission_rate: values.affiliate_enabled ? values.affiliate_commission_rate : 0,
         }
 
         let productId: string
@@ -863,6 +869,61 @@ export default function ProductEditor({ mode, product, sellerId, isAdmin = false
           Add files
           <input type="file" multiple className="sr-only" onChange={handleProductFilesChange} />
         </label>
+      </div>
+
+      {/* Affiliation */}
+      <div className="space-y-3 rounded-xl border border-gray-200 p-5 bg-gray-50">
+        <div className="flex items-center justify-between">
+          <div>
+            <label className="block text-sm font-medium text-gray-700">Enable Affiliation</label>
+            <p className="text-xs text-gray-500 mt-0.5">Allow other users to promote this product and earn a commission</p>
+          </div>
+          <Controller
+            name="affiliate_enabled"
+            control={control}
+            render={({ field }) => (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={field.value}
+                onClick={() => field.onChange(!field.value)}
+                className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors focus:outline-none focus:ring-2 focus:ring-brand-magenta/30 ${
+                  field.value ? 'bg-brand-magenta' : 'bg-gray-300'
+                }`}
+              >
+                <span
+                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition-transform ${
+                    field.value ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            )}
+          />
+        </div>
+
+        {watch('affiliate_enabled') && (
+          <div className="pt-3 border-t border-gray-200 space-y-2">
+            <label className="block text-sm font-medium text-gray-700">
+              Commission Rate: <span className="text-brand-magenta font-semibold">{watch('affiliate_commission_rate') ?? 0}%</span>
+            </label>
+            <p className="text-xs text-gray-500">Percentage of the sale price paid to affiliates</p>
+            <input
+              type="range"
+              min="1"
+              max="70"
+              step="1"
+              className="w-full accent-[#FF007A]"
+              {...register('affiliate_commission_rate', { valueAsNumber: true })}
+            />
+            <div className="flex justify-between text-xs text-gray-400">
+              <span>1%</span>
+              <span>70%</span>
+            </div>
+            {errors.affiliate_commission_rate && (
+              <p className="text-xs text-red-500">{errors.affiliate_commission_rate.message}</p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Submit */}

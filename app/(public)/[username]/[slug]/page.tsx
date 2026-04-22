@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import Image from 'next/image'
 import Link from 'next/link'
+import { Suspense } from 'react'
 import type { Metadata } from 'next'
 import { createClient } from '@/lib/supabase/server'
 import StarRating from '@/components/products/StarRating'
@@ -11,6 +12,7 @@ import ProductDescription from '@/components/products/ProductDescription'
 import LiveSalesBadge from '@/components/products/LiveSalesBadge'
 import WishlistButton from '@/components/products/WishlistButton'
 import ShareButton from '@/components/products/ShareButton'
+import AffiliateTracker from '@/components/products/AffiliateTracker'
 import WhatsAppScreenshot from '@/components/testimonials/WhatsAppScreenshot'
 import type { ChatTestimonial } from '@/components/testimonials/WhatsAppScreenshot'
 import { formatPrice } from '@/lib/utils'
@@ -91,6 +93,9 @@ export default async function ProductDetailPage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-white">
+      <Suspense fallback={null}>
+        <AffiliateTracker />
+      </Suspense>
       {/* Draft preview banner */}
       {isDraft && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 bg-yellow-400 text-yellow-900 font-semibold text-sm px-5 py-3 rounded-full shadow-lg border border-yellow-500 pointer-events-none">

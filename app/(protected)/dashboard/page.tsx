@@ -3,7 +3,7 @@ import Link from 'next/link'
 import type React from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
-import { Package, DollarSign, ShoppingBag, TrendingUp, UserCircle, Key, BookOpen } from 'lucide-react'
+import { Package, DollarSign, ShoppingBag, TrendingUp, UserCircle, Key, BookOpen, Link2 } from 'lucide-react'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -188,6 +188,12 @@ export default async function DashboardPage() {
             <h3 className="font-bold text-brand-black mb-1">API Docs</h3>
             <p className="text-sm text-gray-400">Reference for all REST endpoints &amp; agent usage</p>
             <span className="text-sm text-[#FF007A] font-semibold mt-3 block group-hover:underline">View docs →</span>
+          </Link>
+          <Link href="/dashboard/affiliates" className="bg-white rounded-2xl p-6 border border-gray-100 hover:shadow-md transition-all hover:-translate-y-0.5 group">
+            <Link2 className="w-7 h-7 text-orange-500 mb-3" />
+            <h3 className="font-bold text-brand-black mb-1">Affiliate Program</h3>
+            <p className="text-sm text-gray-400">Earn commissions or manage affiliates for your products</p>
+            <span className="text-sm text-[#FF007A] font-semibold mt-3 block group-hover:underline">Go to affiliates →</span>
           </Link>
         </div>
       </div>

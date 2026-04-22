@@ -1,11 +1,13 @@
 /** Zero-decimal currencies that Stripe stores as whole units (no cents). */
-const ZERO_DECIMAL_CURRENCIES = new Set(['JPY', 'KRW', 'VND', 'BIF', 'CLP', 'GNF', 'ISK', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF', 'XPF'])
+export const ZERO_DECIMAL_CURRENCIES = new Set(['JPY', 'KRW', 'VND', 'BIF', 'CLP', 'GNF', 'ISK', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF', 'XPF'])
 
-/** Format a Stripe amount to a display string: 999 → "$9.99", 980 (JPY) → "¥980" */
+/** Format a Stripe amount to a display string: 999 → "$9.99", 98000 (JPY) → "¥980" */
 export function formatPrice(amount: number, currency = 'usd'): string {
   const upper = currency.toUpperCase()
   const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(upper)
-  const value = isZeroDecimal ? amount : amount / 100
+  // All prices are stored as value × 100 in the DB, so always divide by 100 first.
+  // For zero-decimal currencies (JPY, KRW, etc.) we then round to a whole number.
+  const value = amount / 100
   const locale = upper === 'JPY' ? 'ja-JP' : 'en-US'
   return new Intl.NumberFormat(locale, {
     style: 'currency',

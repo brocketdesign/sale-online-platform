@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { stripe } from '@/lib/stripe'
+import { stripe, formatAmountForStripe } from '@/lib/stripe'
 import type { CartItem } from '@/types/database'
 import { STRIPE_LOCALE_MAP, type PageLanguage } from '@/lib/i18n'
 
@@ -39,6 +39,8 @@ export async function POST(request: Request) {
 
     const siteUrl = new URL(request.url).origin
 
+    const primaryCurrency = items[0]?.currency ?? 'USD'
+
     // Build line items from cart
     const lineItems = items.map(item => ({
       price_data: {
@@ -48,7 +50,8 @@ export async function POST(request: Request) {
           description: `by ${item.sellerName}`,
           ...(item.bannerUrl ? { images: [item.bannerUrl] } : {}),
         },
-        unit_amount: item.price,
+        // All DB prices are stored ×100; convert to Stripe's expected unit_amount.
+        unit_amount: formatAmountForStripe(item.price, item.currency),
       },
       quantity: 1,
     }))
@@ -57,9 +60,9 @@ export async function POST(request: Request) {
     if (tip > 0) {
       lineItems.push({
         price_data: {
-          currency: (items[0]?.currency ?? 'USD').toLowerCase(),
+          currency: primaryCurrency.toLowerCase(),
           product_data: { name: 'Tip for Creators 💜', description: 'Optional tip for the creators' },
-          unit_amount: tip,
+          unit_amount: formatAmountForStripe(tip, primaryCurrency),
         },
         quantity: 1,
       })
@@ -69,9 +72,9 @@ export async function POST(request: Request) {
     if (vatAmount > 0) {
       lineItems.push({
         price_data: {
-          currency: (items[0]?.currency ?? 'USD').toLowerCase(),
+          currency: primaryCurrency.toLowerCase(),
           product_data: { name: `VAT (${body.vatRate ? Math.round(body.vatRate * 100) : 0}%)`, description: 'Value added tax' },
-          unit_amount: vatAmount,
+          unit_amount: formatAmountForStripe(vatAmount, primaryCurrency),
         },
         quantity: 1,
       })

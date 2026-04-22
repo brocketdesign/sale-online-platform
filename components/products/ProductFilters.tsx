@@ -5,6 +5,7 @@ import { useRouter, useSearchParams, usePathname } from 'next/navigation'
 import { Search, X } from 'lucide-react'
 import Accordion from '@/components/ui/Accordion'
 import { FILE_FORMAT_LABELS } from '@/lib/utils'
+import { LANGUAGE_OPTIONS } from '@/lib/i18n'
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Most recent' },
@@ -15,6 +16,15 @@ const SORT_OPTIONS = [
 ]
 
 const FORMAT_OPTIONS = Object.entries(FILE_FORMAT_LABELS).map(([value, label]) => ({ value, label }))
+
+const CURRENCY_OPTIONS = [
+  { value: 'USD', label: 'USD – US Dollar' },
+  { value: 'EUR', label: 'EUR – Euro' },
+  { value: 'GBP', label: 'GBP – British Pound' },
+  { value: 'CAD', label: 'CAD – Canadian Dollar' },
+  { value: 'AUD', label: 'AUD – Australian Dollar' },
+  { value: 'JPY', label: 'JPY – Japanese Yen' },
+]
 
 interface ProductFiltersProps {
   totalCount: number
@@ -63,8 +73,26 @@ export default function ProductFilters({ totalCount, availableTags }: ProductFil
     updateParam('format', next.length ? next.join(',') : null)
   }
 
+  function toggleLanguage(lang: string) {
+    const current = searchParams.get('language')?.split(',').filter(Boolean) ?? []
+    const next = current.includes(lang)
+      ? current.filter((l) => l !== lang)
+      : [...current, lang]
+    updateParam('language', next.length ? next.join(',') : null)
+  }
+
+  function toggleCurrency(currency: string) {
+    const current = searchParams.get('currency')?.split(',').filter(Boolean) ?? []
+    const next = current.includes(currency)
+      ? current.filter((c) => c !== currency)
+      : [...current, currency]
+    updateParam('currency', next.length ? next.join(',') : null)
+  }
+
   const activeTags = searchParams.get('tags')?.split(',').filter(Boolean) ?? []
   const activeFormats = searchParams.get('format')?.split(',').filter(Boolean) ?? []
+  const activeLanguages = searchParams.get('language')?.split(',').filter(Boolean) ?? []
+  const activeCurrencies = searchParams.get('currency')?.split(',').filter(Boolean) ?? []
   const sort = searchParams.get('sort') ?? 'newest'
   const minPrice = searchParams.get('min_price') ?? ''
   const maxPrice = searchParams.get('max_price') ?? ''
@@ -144,6 +172,42 @@ export default function ProductFilters({ totalCount, availableTags }: ProductFil
                 className="w-3.5 h-3.5 rounded border-gray-300 text-[#FF007A] focus:ring-[#FF007A]"
               />
               <span className="text-sm text-gray-600 group-hover:text-gray-900">{f.label}</span>
+            </label>
+          ))}
+        </div>
+      </Accordion>
+
+      {/* Language */}
+      <Accordion title="Language">
+        <div className="space-y-1.5">
+          {LANGUAGE_OPTIONS.map((l) => (
+            <label key={l.value} className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={activeLanguages.includes(l.value)}
+                onChange={() => toggleLanguage(l.value)}
+                className="w-3.5 h-3.5 rounded border-gray-300 text-[#FF007A] focus:ring-[#FF007A]"
+              />
+              <span className="text-sm text-gray-600 group-hover:text-gray-900">
+                {l.flag} {l.label}
+              </span>
+            </label>
+          ))}
+        </div>
+      </Accordion>
+
+      {/* Currency */}
+      <Accordion title="Currency">
+        <div className="space-y-1.5">
+          {CURRENCY_OPTIONS.map((c) => (
+            <label key={c.value} className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={activeCurrencies.includes(c.value)}
+                onChange={() => toggleCurrency(c.value)}
+                className="w-3.5 h-3.5 rounded border-gray-300 text-[#FF007A] focus:ring-[#FF007A]"
+              />
+              <span className="text-sm text-gray-600 group-hover:text-gray-900">{c.label}</span>
             </label>
           ))}
         </div>

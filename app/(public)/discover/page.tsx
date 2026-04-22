@@ -12,6 +12,8 @@ interface PageProps {
     format?: string
     min_price?: string
     max_price?: string
+    language?: string
+    currency?: string
   }>
 }
 
@@ -47,6 +49,16 @@ async function getProducts(sp: Awaited<PageProps['searchParams']>) {
 
   if (sp.max_price) {
     query = query.lte('price', parseInt(sp.max_price) * 100)
+  }
+
+  if (sp.language) {
+    const languages = sp.language.split(',').filter(Boolean)
+    query = query.in('page_language', languages)
+  }
+
+  if (sp.currency) {
+    const currencies = sp.currency.split(',').filter(Boolean)
+    query = query.in('currency', currencies)
   }
 
   const sort = sp.sort ?? 'newest'

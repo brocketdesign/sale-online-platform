@@ -1,6 +1,8 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import type { Metadata } from 'next'
 import Footer from '@/components/layout/Footer'
+import { blogPosts } from '@/lib/blog-data'
 
 export const metadata: Metadata = {
   title: 'Blog — Sellify',
@@ -9,88 +11,7 @@ export const metadata: Metadata = {
 
 const categories = ['All', 'Selling tips', 'Creator stories', 'Product updates', 'Platform']
 
-const posts = [
-  {
-    slug: 'how-to-price-digital-products',
-    category: 'Selling tips',
-    title: 'How to price your digital products (without underselling yourself)',
-    excerpt:
-      'Pricing is one of the hardest decisions creators face. Too low and you leave money on the table; too high and buyers hesitate. Here\u2019s a framework that works.',
-    date: 'April 3, 2026',
-    readTime: '6 min read',
-    featured: true,
-  },
-  {
-    slug: 'creators-who-quit-day-jobs',
-    category: 'Creator stories',
-    title: '10 creators who quit their day jobs selling digital products',
-    excerpt:
-      'From designers to musicians to fitness coaches — real stories of people who turned their knowledge into income and never looked back.',
-    date: 'March 28, 2026',
-    readTime: '8 min read',
-    featured: false,
-  },
-  {
-    slug: 'guide-selling-ebooks-2026',
-    category: 'Selling tips',
-    title: 'The complete guide to selling ebooks in 2026',
-    excerpt:
-      'Writing the book is only half the work. Learn how to format, price, market, and deliver your ebook so readers love buying it.',
-    date: 'March 20, 2026',
-    readTime: '10 min read',
-    featured: false,
-  },
-  {
-    slug: 'pay-what-you-want-pricing',
-    category: 'Selling tips',
-    title: 'Why pay-what-you-want pricing works better than you think',
-    excerpt:
-      'Giving buyers control over price sounds scary, but the data tells a different story. Discover how to use flexible pricing to grow faster.',
-    date: 'March 14, 2026',
-    readTime: '5 min read',
-    featured: false,
-  },
-  {
-    slug: 'product-description-that-converts',
-    category: 'Selling tips',
-    title: 'How to write a product description that actually converts',
-    excerpt:
-      'Most product pages lose buyers in the first three seconds. Learn the copywriting techniques that turn browsers into customers.',
-    date: 'March 7, 2026',
-    readTime: '7 min read',
-    featured: false,
-  },
-  {
-    slug: 'building-audience-before-launch',
-    category: 'Selling tips',
-    title: 'Building an audience before you launch your first product',
-    excerpt:
-      "Your first sale shouldn't be a surprise. Here's how to attract the right people before your product is even ready.",
-    date: 'February 27, 2026',
-    readTime: '9 min read',
-    featured: false,
-  },
-  {
-    slug: 'best-digital-product-ideas-2026',
-    category: 'Selling tips',
-    title: '25 digital product ideas you can create this weekend',
-    excerpt:
-      "No audience? No problem. These low-effort, high-value product ideas work even if you're just starting out.",
-    date: 'February 19, 2026',
-    readTime: '6 min read',
-    featured: false,
-  },
-  {
-    slug: 'sellify-platform-update-q1-2026',
-    category: 'Product updates',
-    title: "What's new in Sellify — Q1 2026",
-    excerpt:
-      "New analytics dashboard, bulk discount codes, and a redesigned product page experience. Here's everything that shipped this quarter.",
-    date: 'February 10, 2026',
-    readTime: '4 min read',
-    featured: false,
-  },
-]
+const posts = blogPosts
 
 const categoryColors: Record<string, string> = {
   'Selling tips': 'bg-blue-50 text-blue-700',
@@ -137,7 +58,15 @@ export default function BlogPage() {
                 <span>{featured.readTime}</span>
               </div>
             </div>
-            <div className="hidden md:block bg-gradient-to-br from-[#FF007A]/20 to-brand-pink/20 min-h-[320px]" />
+            <div className="hidden md:block relative min-h-[320px]">
+              <Image
+                src={featured.thumbnailUrl}
+                alt={featured.title}
+                fill
+                className="object-cover"
+                sizes="(max-width: 768px) 100vw, 50vw"
+              />
+            </div>
           </div>
         </Link>
 
@@ -163,23 +92,34 @@ export default function BlogPage() {
             <Link
               key={post.slug}
               href={`/blog/${post.slug}`}
-              className="group flex flex-col bg-white border border-gray-100 rounded-2xl p-7 hover:shadow-md hover:-translate-y-0.5 transition-all"
+              className="group flex flex-col bg-white border border-gray-100 rounded-2xl overflow-hidden hover:shadow-md hover:-translate-y-0.5 transition-all"
             >
-              <span
-                className={`self-start text-xs font-semibold px-2.5 py-1 rounded-full mb-4 ${
-                  categoryColors[post.category] ?? 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {post.category}
-              </span>
-              <h3 className="text-lg font-bold text-brand-black leading-snug mb-3 group-hover:underline">
-                {post.title}
-              </h3>
-              <p className="text-gray-500 text-sm leading-relaxed flex-1 mb-5">{post.excerpt}</p>
-              <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
-                <span>{post.date}</span>
-                <span>·</span>
-                <span>{post.readTime}</span>
+              <div className="relative w-full aspect-video bg-gray-100">
+                <Image
+                  src={post.thumbnailUrl}
+                  alt={post.title}
+                  fill
+                  className="object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                />
+              </div>
+              <div className="p-7 flex flex-col flex-1">
+                <span
+                  className={`self-start text-xs font-semibold px-2.5 py-1 rounded-full mb-4 ${
+                    categoryColors[post.category] ?? 'bg-gray-100 text-gray-600'
+                  }`}
+                >
+                  {post.category}
+                </span>
+                <h3 className="text-lg font-bold text-brand-black leading-snug mb-3 group-hover:underline flex-1">
+                  {post.title}
+                </h3>
+                <p className="text-gray-500 text-sm leading-relaxed mb-5">{post.excerpt}</p>
+                <div className="flex items-center gap-2 text-xs text-gray-400 mt-auto">
+                  <span>{post.date}</span>
+                  <span>·</span>
+                  <span>{post.readTime}</span>
+                </div>
               </div>
             </Link>
           ))}

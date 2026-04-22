@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
+import type React from 'react'
 import { createClient } from '@/lib/supabase/server'
 import { formatPrice } from '@/lib/utils'
 import { Package, DollarSign, ShoppingBag, TrendingUp, UserCircle, Key, BookOpen } from 'lucide-react'
@@ -17,7 +18,7 @@ export default async function DashboardPage() {
 
   const { data: products } = await supabase
     .from('products')
-    .select('id, status, price, sales_count, title')
+    .select('id, status, price, sales_count, title, currency')
     .eq('seller_id', user.id)
 
   const productIds = (products ?? []).map((p: { id: string }) => p.id)
@@ -25,9 +26,9 @@ export default async function DashboardPage() {
   const { data: orderItems } = productIds.length > 0
     ? await supabase
         .from('order_items')
-        .select('product_id, unit_price, quantity')
+        .select('product_id, unit_price, quantity, currency')
         .in('product_id', productIds)
-    : { data: [] as Array<{ product_id: string; unit_price: number; quantity: number }> }
+    : { data: [] as Array<{ product_id: string; unit_price: number; quantity: number; currency: string }> }
 
   // Real revenue and per-product real sales count from actual orders
   const realOrdersByProduct = (orderItems ?? []).reduce<Record<string, { revenue: number; count: number }>>(
@@ -41,22 +42,62 @@ export default async function DashboardPage() {
     {}
   )
 
-  // Compute total revenue including placeholder sales (at product price)
-  let totalRevenue = 0
+  // Per-currency revenue: real orders grouped by currency + placeholder sales at product currency
+  const revenuePerCurrency: Record<string, { revenue: number; count: number }> = {}
+  for (const item of (orderItems ?? [])) {
+    const cur = (item.currency ?? 'usd').toLowerCase()
+    if (!revenuePerCurrency[cur]) revenuePerCurrency[cur] = { revenue: 0, count: 0 }
+    revenuePerCurrency[cur].revenue += item.unit_price * item.quantity
+    revenuePerCurrency[cur].count += item.quantity
+  }
   for (const product of (products ?? [])) {
     const real = realOrdersByProduct[product.id] ?? { revenue: 0, count: 0 }
     const placeholderCount = Math.max(0, (product.sales_count ?? 0) - real.count)
-    totalRevenue += real.revenue + placeholderCount * product.price
+    if (placeholderCount > 0) {
+      const cur = (product.currency ?? 'usd').toLowerCase()
+      if (!revenuePerCurrency[cur]) revenuePerCurrency[cur] = { revenue: 0, count: 0 }
+      revenuePerCurrency[cur].revenue += placeholderCount * product.price
+      revenuePerCurrency[cur].count += placeholderCount
+    }
   }
 
+  const totalRevenue = Object.values(revenuePerCurrency).reduce((s, v) => s + v.revenue, 0)
   const publishedCount = (products ?? []).filter((p: { status: string }) => p.status === 'published').length
   const totalSales = (products ?? []).reduce((s: number, p: { sales_count: number }) => s + (p.sales_count ?? 0), 0)
 
-  const stats = [
-    { label: 'Total revenue', value: formatPrice(totalRevenue), icon: DollarSign, color: 'bg-green-50 text-green-600' },
+  // Sorted currency entries for display (highest revenue first)
+  const currencyEntries = Object.entries(revenuePerCurrency)
+    .filter(([, v]) => v.revenue > 0)
+    .sort((a, b) => b[1].revenue - a[1].revenue)
+
+  type StatItem = {
+    label: string
+    icon: React.ElementType
+    color: string
+    value?: string
+    sub?: string
+    currencies?: Array<{ currency: string; formatted: string }>
+  }
+
+  const stats: StatItem[] = [
+    {
+      label: 'Total revenue',
+      icon: DollarSign,
+      color: 'bg-green-50 text-green-600',
+      currencies: currencyEntries.length > 0
+        ? currencyEntries.map(([cur, { revenue }]) => ({ currency: cur, formatted: formatPrice(revenue, cur) }))
+        : [{ currency: 'usd', formatted: '$0.00' }],
+    },
     { label: 'Products', value: String((products ?? []).length), sub: `${publishedCount} published`, icon: Package, color: 'bg-blue-50 text-blue-600' },
     { label: 'Total sales', value: String(totalSales), icon: ShoppingBag, color: 'bg-[#FF90E8]/10 text-[#FF007A]' },
-    { label: 'Avg. sale value', value: totalSales > 0 ? formatPrice(Math.round(totalRevenue / totalSales)) : '$0', icon: TrendingUp, color: 'bg-yellow-50 text-yellow-600' },
+    {
+      label: 'Avg. sale value',
+      icon: TrendingUp,
+      color: 'bg-yellow-50 text-yellow-600',
+      currencies: currencyEntries.length > 0
+        ? currencyEntries.map(([cur, { revenue, count }]) => ({ currency: cur, formatted: formatPrice(Math.round(revenue / count), cur) }))
+        : [{ currency: 'usd', formatted: '$0.00' }],
+    },
   ]
 
   return (
@@ -87,8 +128,23 @@ export default async function DashboardPage() {
                   <s.icon className="w-5 h-5" />
                 </div>
               </div>
-              <div className="text-2xl font-black text-brand-black">{s.value}</div>
-              {s.sub && <div className="text-xs text-gray-400 mt-1">{s.sub}</div>}
+              {s.currencies ? (
+                <div className="space-y-2 mt-1">
+                  {s.currencies.map(({ currency, formatted }) => (
+                    <div key={currency} className="flex items-baseline gap-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-400 font-mono leading-none shrink-0">
+                        {currency}
+                      </span>
+                      <span className="text-xl font-black text-brand-black leading-none">{formatted}</span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <div className="text-2xl font-black text-brand-black">{s.value}</div>
+                  {s.sub && <div className="text-xs text-gray-400 mt-1">{s.sub}</div>}
+                </>
+              )}
             </div>
           ))}
         </div>

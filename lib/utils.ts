@@ -1,10 +1,18 @@
-/** Format cents to display string: 999 → "$9.99" */
-export function formatPrice(cents: number, currency = 'usd'): string {
-  return new Intl.NumberFormat('en-US', {
+/** Zero-decimal currencies that Stripe stores as whole units (no cents). */
+const ZERO_DECIMAL_CURRENCIES = new Set(['JPY', 'KRW', 'VND', 'BIF', 'CLP', 'GNF', 'ISK', 'MGA', 'PYG', 'RWF', 'UGX', 'XAF', 'XOF', 'XPF'])
+
+/** Format a Stripe amount to a display string: 999 → "$9.99", 980 (JPY) → "¥980" */
+export function formatPrice(amount: number, currency = 'usd'): string {
+  const upper = currency.toUpperCase()
+  const isZeroDecimal = ZERO_DECIMAL_CURRENCIES.has(upper)
+  const value = isZeroDecimal ? amount : amount / 100
+  const locale = upper === 'JPY' ? 'ja-JP' : 'en-US'
+  return new Intl.NumberFormat(locale, {
     style: 'currency',
-    currency: currency.toUpperCase(),
-    minimumFractionDigits: 2,
-  }).format(cents / 100)
+    currency: upper,
+    minimumFractionDigits: isZeroDecimal ? 0 : 2,
+    maximumFractionDigits: isZeroDecimal ? 0 : 2,
+  }).format(value)
 }
 
 /** Slugify a string for use in URLs */

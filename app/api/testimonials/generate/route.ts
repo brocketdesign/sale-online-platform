@@ -45,7 +45,7 @@ export async function POST(request: Request) {
   const serviceSupabase = createServiceClient()
 
   const body = await request.json()
-  const { productTitle, productDescription, generateAvatar, generateBackground, avatarGender, avatarEthnicity, avatarAge } = body as {
+  const { productTitle, productDescription, generateAvatar, generateBackground, avatarGender, avatarEthnicity, avatarAge, language } = body as {
     productTitle: string
     productDescription?: string
     generateAvatar?: boolean
@@ -53,19 +53,30 @@ export async function POST(request: Request) {
     avatarGender?: string | null
     avatarEthnicity?: string | null
     avatarAge?: string | null
+    language?: string | null
   }
 
   try {
+    // Resolve language name for the AI prompt
+    const languageNames: Record<string, string> = {
+      en: 'English',
+      fr: 'French',
+      es: 'Spanish',
+      ja: 'Japanese',
+    }
+    const targetLanguage = languageNames[language ?? 'en'] ?? 'English'
+    const isJapanese = (language ?? 'en') === 'ja'
+
     // 1. Generate chat message content
     const chatContent = await grokChat([
       {
         role: 'system',
         content:
-          `You are generating realistic WhatsApp-style customer testimonials for digital products. 
-Write a short, authentic-sounding message from a happy customer (2-4 sentences). 
-Include natural excitement, maybe a specific detail they loved. 
-Use casual language, occasional typos or abbreviations are fine.
-Also provide: a realistic sender first name, a display time like "14:23", a display date like "Today", and 3–5 emoji reactions as a JSON array of {emoji, count} objects (counts 1-12).
+          `You are generating realistic WhatsApp-style customer testimonials for digital products.
+Write a short, authentic-sounding message from a happy customer (2-4 sentences) in ${targetLanguage}.
+Include natural excitement, maybe a specific detail they loved.
+Use casual language, occasional typos or abbreviations are fine.${isJapanese ? ' Use natural Japanese casual style (e.g. ね、よ、！). The sender name should be a realistic Japanese first name.' : ''}
+Also provide: a realistic sender first name, a display time like "14:23", a display date like "${isJapanese ? '今日' : 'Today'}", and 3–5 emoji reactions as a JSON array of {emoji, count} objects (counts 1-12).
 Respond ONLY with valid JSON in this exact shape:
 {
   "senderName": "...",

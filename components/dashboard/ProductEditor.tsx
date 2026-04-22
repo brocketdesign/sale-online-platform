@@ -65,7 +65,7 @@ const schema = z.object({
   preview_enabled: z.boolean(),
   preview_page_count: z.number().int().min(1).max(10),
   preview_blur: z.boolean(),
-  page_language: z.enum(['en', 'fr', 'es'] as const),
+  page_language: z.enum(['en', 'fr', 'es', 'ja'] as const),
 })
 
 type FormValues = z.infer<typeof schema>
@@ -93,6 +93,7 @@ const CURRENCY_OPTIONS = [
   { value: 'GBP', label: 'GBP – British Pound' },
   { value: 'CAD', label: 'CAD – Canadian Dollar' },
   { value: 'AUD', label: 'AUD – Australian Dollar' },
+  { value: 'JPY', label: 'JPY – Japanese Yen' },
 ]
 
 export default function ProductEditor({ mode, product, sellerId, isAdmin = false }: Props) {

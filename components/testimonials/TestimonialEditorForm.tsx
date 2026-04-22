@@ -5,6 +5,7 @@ import Image from 'next/image'
 import { Sparkles, Loader2, Trash2, Check, RefreshCw, Upload, Shuffle } from 'lucide-react'
 import { createClient } from '@/lib/supabase/client'
 import WhatsAppScreenshot, { type Reaction, type ChatTestimonial } from './WhatsAppScreenshot'
+import { LANGUAGE_OPTIONS } from '@/lib/i18n'
 
 interface Props {
   productId: string
@@ -54,6 +55,7 @@ export default function TestimonialEditorForm({
   const [avatarGender, setAvatarGender] = useState<string | null>(null)
   const [avatarEthnicity, setAvatarEthnicity] = useState<string | null>(null)
   const [avatarAge, setAvatarAge] = useState<string | null>(null)
+  const [language, setLanguage] = useState<string>('en')
 
   // ── AI generation ──────────────────────────────────────────
   async function generateAll() {
@@ -71,6 +73,7 @@ export default function TestimonialEditorForm({
           avatarGender,
           avatarEthnicity,
           avatarAge,
+          language,
         }),
       })
       const data = await res.json()
@@ -131,6 +134,7 @@ export default function TestimonialEditorForm({
           avatarGender,
           avatarEthnicity,
           avatarAge,
+          language,
         }),
       })
       const data = await res.json()
@@ -203,6 +207,22 @@ export default function TestimonialEditorForm({
             {error}
           </div>
         )}
+
+        {/* Language selector for AI generation */}
+        <label className="block">
+          <span className="text-sm font-semibold text-gray-700 mb-1.5 block">Testimonial Language</span>
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#FF007A]/40 bg-white"
+          >
+            {LANGUAGE_OPTIONS.map((opt) => (
+              <option key={opt.value} value={opt.value}>
+                {opt.flag} {opt.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         {/* AI generate button */}
         <button

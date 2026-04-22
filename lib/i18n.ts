@@ -1,9 +1,10 @@
-export type PageLanguage = 'en' | 'fr' | 'es'
+export type PageLanguage = 'en' | 'fr' | 'es' | 'ja'
 
 export const LANGUAGE_OPTIONS: { value: PageLanguage; label: string; flag: string }[] = [
   { value: 'en', label: 'English', flag: '🇺🇸' },
   { value: 'fr', label: 'Français', flag: '🇫🇷' },
   { value: 'es', label: 'Español', flag: '🇪🇸' },
+  { value: 'ja', label: '日本語', flag: '🇯🇵' },
 ]
 
 /**
@@ -14,6 +15,7 @@ export const STRIPE_LOCALE_MAP: Record<PageLanguage, string> = {
   en: 'en',
   fr: 'fr',
   es: 'es',
+  ja: 'ja',
 }
 
 export interface PageTranslations {
@@ -270,10 +272,73 @@ const es: PageTranslations = {
   returnToCart: 'Volver al carrito',
 }
 
-export const translations: Record<PageLanguage, PageTranslations> = { en, fr, es }
+const ja: PageTranslations = {
+  addToCart: 'カートに追加',
+  addToWishlist: 'ウィッシュリストに追加',
+  wishlistSaved: '保存済み',
+  saveToWishlist: 'ウィッシュリストに保存',
+  removeFromWishlist: 'ウィッシュリストから削除',
+  buyUnlock: '購入してロック解除',
+  ratings: '評価',
+  rating: '評価',
+  salesCount: (n) => `${n.toLocaleString('ja-JP')} 件の販売`,
+  preview: 'プレビュー',
+  previewSubtitle: '商品の中身をご覧ください。',
+  previewBlurSubtitle: 'サンプルページ — 全コンテンツを閲覧するには購入してください。',
+  verifiedReviews: '認証済みレビュー',
+  verifiedBadge: '認証済み',
+  verifiedReviewsSubtitle: '許可を得て共有された実際のお客様のメッセージです。',
+  creatorSection: 'クリエイターについて',
+  viewStore: 'ストアを見る',
+  sidebarBy: '著者：',
+  continueShoppingLink: '← ショッピングを続ける',
+  yourOrder: 'ご注文内容',
+  removeGiftOption: 'ギフトオプションを削除',
+  sendAsGift: 'ギフトとして送る',
+  recipientEmail: '受取人のメールアドレス',
+  giftNote: 'ギフトメッセージ（任意）',
+  giftNotePlaceholder: 'お誕生日おめでとう！楽しんでね！',
+  tipCreators: 'クリエイターへのチップ',
+  noTip: 'チップなし',
+  customTip: 'カスタム',
+  contactInformation: '連絡先情報',
+  emailLabel: 'メールアドレス',
+  emailPlaceholder: 'you@example.com',
+  fullNameLabel: '氏名',
+  fullNamePlaceholder: '山田 太郎',
+  countryLabel: '国',
+  vatLabel: '消費税 / 税番号（任意）',
+  vatPlaceholder: 'JP1234567890',
+  vatHint: '入力すると消費税が免除されます',
+  orderSummary: '注文概要',
+  subtotalLabel: '小計',
+  tipLabel: 'チップ',
+  vatSummary: (percent) => `消費税 (${percent}%)`,
+  totalLabel: '合計',
+  payButton: (amount) => `${amount} を支払う`,
+  stripeDisclaimer: 'Stripe による決済。お客様の情報は暗号化されて安全に保護されています。',
+  emptyCartTitle: 'カートは空です',
+  emptyCartBody: 'チェックアウト前に商品を追加してください。',
+  browseProducts: '商品を見る',
+  cartItemBy: '著者：',
+  paymentSuccessTitle: '支払いが完了しました！',
+  paymentSuccessGift: (email) => `ギフトが ${email} に送信されました。`,
+  paymentSuccessEmail: (email) => `確認メールが ${email} に送信されました。`,
+  goToLibrary: 'マイライブラリへ',
+  continueShopping: 'ショッピングを続ける',
+  paymentNotConfirmedTitle: '支払いが確認できません',
+  paymentNotConfirmedBody: 'お支払いが処理されませんでした。もう一度お試しください。',
+  backToCheckout: 'チェックアウトに戻る',
+  paymentCancelledTitle: '支払いがキャンセルされました',
+  paymentCancelledBody: 'ご安心ください — カートはそのまま保存されています。準備ができたらいつでも購入を完了できます。',
+  returnToCart: 'カートに戻る',
+}
+
+export const translations: Record<PageLanguage, PageTranslations> = { en, fr, es, ja }
 
 export function getTranslations(lang?: string | null): PageTranslations {
   if (lang === 'fr') return fr
   if (lang === 'es') return es
+  if (lang === 'ja') return ja
   return en
 }

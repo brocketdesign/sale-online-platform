@@ -48,11 +48,24 @@ export default function RegisterPage() {
       password,
       options: {
         data: { display_name: displayName || username },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback`,
       },
     })
 
     if (error) {
-      toast.error(error.message)
+      if (error.message.toLowerCase().includes('already registered') || error.message.toLowerCase().includes('already exists')) {
+        toast.error('An account with that email already exists. Try logging in instead.')
+      } else {
+        toast.error(error.message)
+      }
+      setLoading(false)
+      return
+    }
+
+    // When email confirmations are ON and email already exists, Supabase returns
+    // a ghost user with empty identities instead of an error (to prevent enumeration).
+    if (!data.user || data.user.identities?.length === 0) {
+      toast.error('An account with that email already exists. Try logging in instead.')
       setLoading(false)
       return
     }

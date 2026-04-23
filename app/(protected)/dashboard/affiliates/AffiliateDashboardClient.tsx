@@ -77,20 +77,18 @@ function AffiliatePanel({ userId }: { userId: string }) {
   const { copied, copy } = useCopy()
   const [links, setLinks] = useState<AffiliateLink[]>([])
   const [commissions, setCommissions] = useState<Commission[]>([])
-  const [balance, setBalance] = useState(0)
   const [loading, setLoading] = useState(true)
   const [deleting, setDeleting] = useState<string | null>(null)
 
   const load = useCallback(async () => {
     setLoading(true)
-    const [linksRes, commissionsRes, profileRes] = await Promise.all([
+    const [linksRes, commissionsRes] = await Promise.all([
       fetch('/api/affiliates/links'),
       supabase
         .from('affiliate_commissions')
         .select(`id, commission_amount, currency, status, created_at, affiliate_link_id, product_id`)
         .eq('affiliate_id', userId)
         .order('created_at', { ascending: false }),
-      supabase.from('profiles').select('affiliate_balance').eq('id', userId).maybeSingle(),
     ])
 
     if (linksRes.ok) {
@@ -98,7 +96,6 @@ function AffiliatePanel({ userId }: { userId: string }) {
       setLinks(data.links ?? [])
     }
     setCommissions(commissionsRes.data ?? [])
-    setBalance(profileRes.data?.affiliate_balance ?? 0)
     setLoading(false)
   }, [supabase, userId])
 
@@ -116,8 +113,32 @@ function AffiliatePanel({ userId }: { userId: string }) {
     setDeleting(null)
   }
 
-  const totalEarned = commissions.filter(c => c.status !== 'cancelled').reduce((s, c) => s + c.commission_amount, 0)
   const totalClicks = links.reduce((s, l) => s + l.clicks, 0)
+
+  // Group pending commissions by currency for multi-currency display
+  const pendingByCurrency = commissions
+    .filter(c => c.status === 'pending')
+    .reduce<Record<string, number>>((acc, c) => {
+      const cur = (c.currency ?? 'usd').toLowerCase()
+      acc[cur] = (acc[cur] ?? 0) + c.commission_amount
+      return acc
+    }, {})
+  const pendingCurrencies = Object.entries(pendingByCurrency)
+    .sort((a, b) => b[1] - a[1])
+    .map(([currency, amount]) => ({ currency, formatted: formatPrice(amount, currency) }))
+  const pendingDisplay = pendingCurrencies.length > 0 ? pendingCurrencies : [{ currency: 'usd', formatted: '$0.00' }]
+
+  // Group total earned (non-cancelled) by currency
+  const earnedByCurrency = commissions
+    .filter(c => c.status !== 'cancelled')
+    .reduce<Record<string, number>>((acc, c) => {
+      const cur = (c.currency ?? 'usd').toLowerCase()
+      acc[cur] = (acc[cur] ?? 0) + c.commission_amount
+      return acc
+    }, {})
+  const earnedCurrencies = Object.entries(earnedByCurrency)
+    .sort((a, b) => b[1] - a[1])
+    .map(([currency, amount]) => formatPrice(amount, currency))
 
   if (loading) return <div className="py-12 text-center text-gray-400">Loading...</div>
 
@@ -127,7 +148,7 @@ function AffiliatePanel({ userId }: { userId: string }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={Link2} color="bg-blue-50 text-blue-600" label="Active links" value={String(links.length)} />
         <StatCard icon={TrendingUp} color="bg-purple-50 text-purple-600" label="Total clicks" value={String(totalClicks)} />
-        <StatCard icon={DollarSign} color="bg-green-50 text-green-600" label="Pending balance" value={formatBalance(balance)} />
+        <StatCard icon={DollarSign} color="bg-green-50 text-green-600" label="Pending balance" currencies={pendingDisplay} />
       </div>
 
       {/* My affiliate links */}
@@ -193,7 +214,10 @@ function AffiliatePanel({ userId }: { userId: string }) {
       <section className="bg-white rounded-2xl border border-gray-100 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
           <h2 className="font-semibold text-gray-900">Commission History</h2>
-          <span className="text-xs text-gray-400">Total earned: {formatPrice(totalEarned, 'usd')}</span>
+          <span className="text-xs text-gray-400">
+            Total earned:{' '}
+            {earnedCurrencies.length > 0 ? earnedCurrencies.join(' + ') : '$0.00'}
+          </span>
         </div>
 
         {commissions.length === 0 ? (
@@ -289,7 +313,19 @@ function SellerPanel({ userId }: { userId: string }) {
 
   const enabledProducts = stats.filter(s => s.product.affiliate_enabled)
   const totalAffiliates = new Set(stats.flatMap(s => s.affiliates.map(a => a.affiliate_id))).size
-  const totalCommissionsPaid = stats.flatMap(s => s.affiliates).reduce((sum, a) => sum + a.commission_total, 0)
+
+  // Group commissions issued by currency for multi-currency display
+  const issuedByCurrency = stats
+    .flatMap(s => s.affiliates)
+    .reduce<Record<string, number>>((acc, a) => {
+      const cur = (a.currency ?? 'usd').toLowerCase()
+      acc[cur] = (acc[cur] ?? 0) + a.commission_total
+      return acc
+    }, {})
+  const issuedCurrencies = Object.entries(issuedByCurrency)
+    .sort((a, b) => b[1] - a[1])
+    .map(([currency, amount]) => ({ currency, formatted: formatPrice(amount, currency) }))
+  const issuedDisplay = issuedCurrencies.length > 0 ? issuedCurrencies : [{ currency: 'usd', formatted: '$0.00' }]
 
   return (
     <div className="space-y-8">
@@ -297,7 +333,7 @@ function SellerPanel({ userId }: { userId: string }) {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard icon={Link2} color="bg-blue-50 text-blue-600" label="Products with affiliation" value={String(enabledProducts.length)} />
         <StatCard icon={Users} color="bg-purple-50 text-purple-600" label="Active affiliates" value={String(totalAffiliates)} />
-        <StatCard icon={DollarSign} color="bg-red-50 text-red-600" label="Total commissions issued" value={formatPrice(totalCommissionsPaid, 'usd')} />
+        <StatCard icon={DollarSign} color="bg-red-50 text-red-600" label="Total commissions issued" currencies={issuedDisplay} />
       </div>
 
       {/* Products list */}
@@ -358,22 +394,39 @@ function SellerPanel({ userId }: { userId: string }) {
 }
 
 // ── Shared helpers ─────────────────────────────────────────────────────────
-function StatCard({ icon: Icon, color, label, value }: { icon: React.ElementType; color: string; label: string; value: string }) {
+function StatCard({
+  icon: Icon, color, label, value, currencies,
+}: {
+  icon: React.ElementType
+  color: string
+  label: string
+  value?: string
+  currencies?: Array<{ currency: string; formatted: string }>
+}) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 p-5 flex items-center gap-4">
       <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${color}`}>
         <Icon className="w-5 h-5" />
       </div>
-      <div>
-        <p className="text-2xl font-black text-gray-900">{value}</p>
-        <p className="text-xs text-gray-500">{label}</p>
+      <div className="flex-1 min-w-0">
+        {currencies ? (
+          <div className="space-y-1 mt-0.5">
+            {currencies.map(({ currency, formatted }) => (
+              <div key={currency} className="flex items-baseline gap-2">
+                <span className="text-[10px] font-bold uppercase tracking-widest px-1.5 py-0.5 rounded-md bg-gray-100 text-gray-400 font-mono leading-none shrink-0">
+                  {currency}
+                </span>
+                <span className="text-xl font-black text-gray-900 leading-none">{formatted}</span>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <p className="text-2xl font-black text-gray-900">{value}</p>
+        )}
+        <p className="text-xs text-gray-500 mt-1">{label}</p>
       </div>
     </div>
   )
-}
-
-function formatBalance(cents: number) {
-  return formatPrice(cents, 'usd')
 }
 
 // ── Browse affiliate-enabled products panel ────────────────────────────────
